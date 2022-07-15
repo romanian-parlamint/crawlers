@@ -8,22 +8,39 @@ from core.navigation import UrlBuilder
 from core.crawling import SessionUrlsCrawler
 
 
-def main(args):
-    """Crawl session transcripts."""
-    url_builder = UrlBuilder()
+def iter_session_URLs(args):
+    """Iterate over session URLs from the arguments.
+
+    Parameters
+    ----------
+    args: argparse.Namespace, required
+        The command-line arguments of the script.
+
+    Returns
+    -------
+    url_generator: generator of (datetime, str) tuples
+        The collection of session dates and their URLs.
+    """
     if args.date:
-        logging.info("Crawling session transcript for date {}.".format(
-            args.date))
-        session_url = url_builder.build_URL_for_session(args.date)
-        logging.info(
-            "The URL of the session transcript is {}.".format(session_url))
+        url_builder = UrlBuilder()
+        yield args.date, url_builder.build_URL_for_session(args.date)
     else:
         crawler = SessionUrlsCrawler()
         for year in args.years:
-            logging.info(
-                "Crawling session transcripts for year {}.".format(year))
             for date, url in crawler.crawl(year):
-                print(date, url)
+                yield date, url
+
+
+def main(args):
+    """Crawl session transcripts."""
+    if args.date:
+        logging.info("Crawling session transcript for date {}.".format(
+            args.date))
+    else:
+        logging.info("Crawling sessions for the following years: {}.".format(
+            ", ".join([str(year) for year in args.years])))
+    for date, url in iter_session_URLs(args):
+        print(date, url)
 
 
 def valid_year(year):
