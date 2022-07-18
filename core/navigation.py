@@ -1,4 +1,6 @@
 """Modules required for navigation."""
+import requests
+from lxml import html
 
 
 class UrlBuilder:
@@ -59,3 +61,43 @@ class UrlBuilder:
         date_string = session_date.strftime("%Y%m%d")
         path_and_query = UrlBuilder.SessionUrlTemplate.format(date=date_string)
         return self.build_full_URL(path_and_query)
+
+
+class Browser:
+    """Load page markup from the URLs."""
+
+    def __init__(self):
+        """Create a new instance of the class."""
+
+    def load_page(self, url):
+        """Request the page for the specified URL and returns the HTML markup.
+
+        Parameters
+        ----------
+        url: str, required
+            The URL of the page to load.
+
+        Returns
+        -------
+        html: etree.Element
+            The HTML of the page parsed into a tree structure.
+        """
+        response = requests.get(url)
+        return html.fromstring(response.content)
+
+    def get_element_text(self, element):
+        """Build the element text by iterating through child elements.
+
+        Parameters
+        ----------
+        element: lxml.Element
+            The element for which to build text.
+
+        Returns
+        -------
+        text: str
+            The inner text of the element.
+        """
+        parts = [text.strip() for text in element.itertext()]
+        text = ''.join([p for p in parts if len(p) > 0])
+        return text.strip()

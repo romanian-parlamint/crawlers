@@ -6,6 +6,9 @@ import datetime
 import logging
 from core.navigation import UrlBuilder
 from core.crawling import SessionUrlsCrawler
+from core.crawling import SessionSummaryCrawler
+from pprint import pprint
+import json
 
 
 def iter_session_URLs(args):
@@ -40,7 +43,11 @@ def main(args):
         logging.info("Crawling sessions for the following years: {}.".format(
             ", ".join([str(year) for year in args.years])))
     for date, url in iter_session_URLs(args):
-        print(date, url)
+        data = SessionSummaryCrawler().crawl(url)
+        with open("{}.json".format(date.strftime("%Y-%m-%d")),
+                  'w',
+                  encoding='utf8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def valid_year(year):
