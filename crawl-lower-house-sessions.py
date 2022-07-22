@@ -5,8 +5,8 @@ from argparse import ArgumentTypeError
 import datetime
 import logging
 from core.navigation import UrlBuilder
-from core.crawling import SessionUrlsCrawler
-from core.crawling import SessionSummaryCrawler
+from core.crawling.utils import SessionUrlsCrawler
+from core.crawling.summary import SessionSummaryCrawler
 from pprint import pprint
 import json
 
