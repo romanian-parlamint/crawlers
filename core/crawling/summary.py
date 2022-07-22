@@ -96,9 +96,12 @@ class SessionSummaryCrawler:
             a list of the contents, and an indicator whether the current row is a subrow
             or a normal row.
         """
-        a = next(tr.iterdescendants(tag='a'))
-        number = a.text_content()
-        url = a.get('href')
+        anchors = [a for a in tr.iterdescendants(tag='a')]
+        number, url = None, None
+        if len(anchors) > 0:
+            a = anchors[0]
+            number = a.text_content()
+            url = a.get('href')
 
         row_parser = SummaryRowContentsParser(tr)
         contents = row_parser.parse()

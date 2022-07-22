@@ -7,7 +7,6 @@ import logging
 from core.navigation import UrlBuilder
 from core.crawling.utils import SessionUrlsCrawler
 from core.crawling.summary import SessionSummaryCrawler
-from pprint import pprint
 import json
 
 
@@ -43,6 +42,7 @@ def main(args):
         logging.info("Crawling sessions for the following years: {}.".format(
             ", ".join([str(year) for year in args.years])))
     for date, url in iter_session_URLs(args):
+        logging.info("Crawling session transcript for date {}.".format(date))
         data = SessionSummaryCrawler().crawl(url)
         with open("{}.json".format(date.strftime("%Y-%m-%d")),
                   'w',
