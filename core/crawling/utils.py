@@ -5,6 +5,24 @@ from core.navigation import UrlBuilder
 from core.navigation import Browser
 
 
+def get_element_text(element):
+    """Build the element text by iterating through child elements.
+
+    Parameters
+    ----------
+    element: lxml.Element
+        The element for which to build text.
+
+    Returns
+    -------
+    text: str
+        The inner text of the element.
+    """
+    parts = [text.strip() for text in element.itertext()]
+    text = ''.join([p for p in parts if len(p) > 0])
+    return text.strip()
+
+
 class SessionUrlsCrawler:
     """Crawl session URLs for a specific year."""
 

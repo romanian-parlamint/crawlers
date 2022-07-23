@@ -1,6 +1,7 @@
 """Module responsible for crawling session summary."""
 from core.navigation import UrlBuilder
 from core.navigation import Browser
+from core.crawling.utils import get_element_text
 
 
 class SessionSummaryCrawler:
@@ -50,7 +51,7 @@ class SessionSummaryCrawler:
             title for title in html_root.xpath("//div[@class='box-title']/h3")
         ]
         session_title = headings[-1]
-        return self.__browser.get_element_text(session_title)
+        return get_element_text(session_title)
 
     def __parse_summary_rows(self, html_root):
         """Parse summary rows from page.

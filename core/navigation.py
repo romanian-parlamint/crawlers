@@ -85,19 +85,4 @@ class Browser:
         response = requests.get(url)
         return html.fromstring(response.content)
 
-    def get_element_text(self, element):
-        """Build the element text by iterating through child elements.
 
-        Parameters
-        ----------
-        element: lxml.Element
-            The element for which to build text.
-
-        Returns
-        -------
-        text: str
-            The inner text of the element.
-        """
-        parts = [text.strip() for text in element.itertext()]
-        text = ''.join([p for p in parts if len(p) > 0])
-        return text.strip()
