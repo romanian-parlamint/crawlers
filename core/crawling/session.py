@@ -10,18 +10,24 @@ from core.crawling.utils import get_element_text
 class SessionTranscriptCrawler:
     """Crawl session transcript."""
 
-    def __init__(self):
-        """Create a new instance of session transcript crawler."""
-        self.__url_builder = UrlBuilder()
-        self.__browser = Browser()
-
-    def crawl(self, session_date, session_url):
-        """Crawl the transcript of the session.
+    def __init__(self, session_date):
+        """Create a new instance of session transcript crawler.
 
         Parameters
         ----------
         session_date: datetime.date, required
             The date of the session.
+        """
+        self.__url_builder = UrlBuilder()
+        self.__browser = Browser()
+        self.__start_end_parser = SessionStartEndParser(session_date)
+        self.__contents_parser = SessionContentParser()
+
+    def crawl(self, session_url):
+        """Crawl the transcript of the session.
+
+        Parameters
+        ----------
         session_url: str, required
             The URL of the session.
 
@@ -34,11 +40,16 @@ class SessionTranscriptCrawler:
         if transcript_table is None:
             return {}
         contents = self.__get_transcript_contents(transcript_table)
-        start_end_parser = SessionStartEndParser(session_date)
+
         transcript = {
-            'start': start_end_parser.parse_start_section(contents[0]),
-            'end': start_end_parser.parse_end_section(contents[-1])
+            'start': self.__start_end_parser.parse_start_section(contents[0]),
+            'end': self.__start_end_parser.parse_end_section(contents[-1])
         }
+
+        end_mark = transcript['end']['end_mark']
+        transcript['sections'] = self.__contents_parser.parse_contents(
+            contents[1:], end_mark)
+
         return transcript
 
     def __get_transcript_contents(self, transcript_table):
@@ -204,3 +215,89 @@ class SessionStartEndParser:
                     self.session_date))
             return None
         return get_element_text(element)
+
+
+class SessionContentParser:
+    """Parse the contents of session segments."""
+
+    def parse_contents(self, sections, end_mark):
+        """Parse the contents of session.
+
+        Parameters
+        ----------
+        sections: iterable of etree.Eleement, required
+            The session sections to parse.
+        end_mark: str, required
+            The end mark of the section which will be eliminated from the contents.
+
+        Returns
+        contents: list of dict
+            The contents of the session.
+        """
+        return [self.__parse_section(section) for section in sections]
+
+    def __parse_section(self, section):
+        """Parse the contents of a transcript section.
+
+        Parameters
+        ----------
+        section: etree.Element, required
+            The section whose contents to parse.
+
+        Returns
+        -------
+        contents: dict
+            The contents of the section.
+        """
+        paragraphs = [p for p in section.iterdescendants(tag='p')]
+        speaker = self.__parse_speaker(paragraphs[0])
+        return {'speaker': speaker}
+
+    def __parse_speaker(self, element):
+        """Parse speaker info from the provided element.
+
+        Parameters
+        ----------
+        element: etree.Element, required
+            The element to parse.
+
+        Returns
+        -------
+        speaker: dict
+            The parsed speaker information.
+        """
+        fonts = [f for f in element.iterdescendants(tag='font')]
+        if len(fonts) == 0:
+            # The element doesn't contain the name of a speaker
+            return None
+
+        text = get_element_text(element)
+
+        # Parse full name of the speaker
+        name_element = fonts[0]
+        full_name = re.sub(r'domnul|doamna|(\(.+\)*)?:', '',
+                           get_element_text(name_element), 0,
+                           re.MULTILINE | re.IGNORECASE)
+        full_name = full_name.strip()
+
+        # Get profile URL if present
+        profile_url = None
+        anchors = [
+            a for a in element.iterdescendants(tag='a')
+            if a.get('target') == "PARLAMENTARI"
+        ]
+        if len(anchors) > 0:
+            profile_url = anchors[0].get('href')
+
+        # Get annotation if present
+        annotation = None
+        comments = [i for i in element.iterdescendants(tag='i')]
+        if len(comments) > 0:
+            annotation = get_element_text(comments[0])
+
+        return {
+            'text': text,
+            'full_name': full_name,
+            'profile_url': profile_url,
+            'annotation': annotation
+        }

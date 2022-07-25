@@ -46,8 +46,8 @@ def main(args):
         logging.info("Crawling session summary for date {}.".format(
             date.strftime("%Y-%m-%d")))
         summary = SessionSummaryCrawler().crawl(url)
-        transcript = SessionTranscriptCrawler().crawl(
-            date, summary['full_transcript_url'])
+        transcript = SessionTranscriptCrawler(date).crawl(
+            summary['full_transcript_url'])
         summary.update(transcript)
         with open("{}.json".format(date.strftime("%Y-%m-%d")),
                   'w',
