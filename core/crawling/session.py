@@ -289,13 +289,13 @@ class SessionContentParser:
             # The element doesn't contain the name of a speaker
             return None
 
-        text = get_element_text(element)
+        text = element.text_content().strip()
 
         # Parse full name of the speaker
-        name_element = fonts[0]
-        full_name = re.sub(r'domnul|doamna|(\(.+\)*)?:', '',
-                           get_element_text(name_element), 0,
-                           re.MULTILINE | re.IGNORECASE)
+        name_element_text = get_element_text(fonts[0])
+        sex = 'M' if name_element_text.startswith("Domnul") else 'F'
+        full_name = re.sub(r'domnul|doamna|(\(.+\)*)?:', '', name_element_text,
+                           0, re.MULTILINE | re.IGNORECASE)
         full_name = full_name.strip()
 
         # Get profile URL if present
@@ -317,6 +317,7 @@ class SessionContentParser:
             'text': text,
             'full_name': full_name,
             'profile_url': profile_url,
+            'sex': sex,
             'annotation': annotation
         }
 
