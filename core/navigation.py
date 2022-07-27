@@ -1,6 +1,8 @@
 """Modules required for navigation."""
 import requests
 from lxml import html
+from selenium.webdriver import Firefox
+from selenium.webdriver.firefox.options import Options
 
 
 class UrlBuilder:
@@ -68,6 +70,8 @@ class Browser:
 
     def __init__(self):
         """Create a new instance of the class."""
+        self.__browser_options = Options()
+        self.__browser_options.add_argument('-headless')
 
     def load_page(self, url):
         """Request the page for the specified URL and returns the HTML markup.
@@ -82,7 +86,8 @@ class Browser:
         html: etree.Element
             The HTML of the page parsed into a tree structure.
         """
-        response = requests.get(url)
-        return html.fromstring(response.content)
-
-
+        browser = Firefox(options=self.__browser_options)
+        browser.get(url)
+        page_source = browser.page_source
+        browser.quit()
+        return html.fromstring(page_source)
