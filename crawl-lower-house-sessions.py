@@ -43,8 +43,8 @@ def main(args):
         logging.info("Crawling sessions for the following years: {}.".format(
             ", ".join([str(year) for year in args.years])))
     for date, url in iter_session_URLs(args):
-        logging.info("Crawling session summary for date {}.".format(
-            date.strftime("%Y-%m-%d")))
+        logging.info("Crawling session summary for date {} from {}.".format(
+            date.strftime("%Y-%m-%d"), url))
         summary = SessionSummaryCrawler().crawl(url)
         transcript = SessionTranscriptCrawler(date).crawl(
             summary['full_transcript_url'])
