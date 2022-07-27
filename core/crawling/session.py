@@ -234,24 +234,42 @@ class SessionContentParser:
         contents: list of dict
             The contents of the session.
         """
-        return [self.__parse_section(section) for section in sections]
+        return [
+            self.__parse_section(section, end_mark) for section in sections
+        ]
 
-    def __parse_section(self, section):
+    def __parse_section(self, section, end_mark):
         """Parse the contents of a transcript section.
 
         Parameters
         ----------
         section: etree.Element, required
             The section whose contents to parse.
+        end_mark: str, required
+            The end mark of the section which will be eliminated from the contents.
 
         Returns
         -------
         contents: dict
             The contents of the section.
         """
-        paragraphs = [p for p in section.iterdescendants(tag='p')]
-        speaker = self.__parse_speaker(paragraphs[0])
-        return {'speaker': speaker}
+        content_elements = [
+            e for e in section.iterdescendants() if e.tag in ['p', 'li']
+        ]
+        speaker = self.__parse_speaker(content_elements[0])
+        contents = []
+        for c in content_elements[1:]:
+            content = self.__parse_content(c)
+            text = content['text']
+
+            if text is None or len(text) == 0:
+                continue
+            if end_mark in text:
+                continue
+
+            contents.append(content)
+
+        return {'speaker': speaker, 'contents': contents}
 
     def __parse_speaker(self, element):
         """Parse speaker info from the provided element.
@@ -301,3 +319,25 @@ class SessionContentParser:
             'profile_url': profile_url,
             'annotation': annotation
         }
+
+    def __parse_content(self, element):
+        """Get the content of the given element.
+
+        Parameters
+        ----------
+        element: etree.Element, required
+            The element from which to parse content.
+
+        Returns
+        -------
+        content: dict
+            The content of the element.
+        """
+        text = get_element_text(element)
+
+        annotation = None
+        comments = [i for i in element.iterdescendants(tag='i')]
+        if len(comments) > 0:
+            annotation = get_element_text(comments[0])
+
+        return {'text': text, 'annotation': annotation}
