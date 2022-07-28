@@ -1,5 +1,6 @@
 """Modules required for navigation."""
 import requests
+import logging
 from lxml import html
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
@@ -86,6 +87,7 @@ class Browser:
         html: etree.Element
             The HTML of the page parsed into a tree structure.
         """
+        logging.info("Navigating to {}.".format(url))
         browser = Firefox(options=self.__browser_options)
         browser.get(url)
         page_source = browser.page_source

@@ -1,4 +1,5 @@
 """Module responsible for crawling session summary."""
+import logging
 from core.navigation import UrlBuilder
 from core.navigation import Browser
 from core.crawling.utils import get_element_text
@@ -22,20 +23,27 @@ class SessionSummaryCrawler:
 
         Returns
         -------
-        summary: dict
-            The session summary.
+        summaries: list of dict
+            The summaries of the sessions from the URL
         """
         html_root = self.__browser.load_page(session_url)
-        title = self.__parse_session_title(html_root)
-        summary_rows = self.__parse_summary_rows(html_root)
-        return {
-            'session_title': title,
-            'full_transcript_url': self.__parse_full_transcript_url(html_root),
-            'summary': summary_rows
-        }
+        if self.__is_single_session_summary(html_root):
+            logging.info(
+                "The URL {} contains the summary of a single session.".format(
+                    session_url))
+            return [self.__parse_session_summary(html_root)]
+        else:
+            logging.info(
+                "The URL {} contains the summary of multiple sessions.".format(
+                    session_url))
+            summaries = []
+            for summary_url in self.__parse_summary_urls(html_root):
+                html_root = self.__browser.load_page(summary_url)
+                summaries.append(self.__parse_session_summary(html_root))
+        return summaries
 
-    def __parse_session_title(self, html_root):
-        """Parse session title from HTML markup.
+    def __is_single_session_summary(self, html_root):
+        """Determine whether the provided HTML tree contains the summary of a single session or multiple sessions.
 
         Parameters
         ----------
@@ -44,14 +52,52 @@ class SessionSummaryCrawler:
 
         Returns
         -------
-        title: str
-            The title of the session if found; otherwise None.
+        is_single_session_summary: bool
+            True if the HTML contains the summary of a single session; False otherwise.
         """
-        headings = [
-            title for title in html_root.xpath("//div[@class='box-title']/h3")
-        ]
-        session_title = headings[-1]
-        return get_element_text(session_title)
+        return len(self.__parse_summary_urls(html_root)) == 1
+
+    def __parse_summary_urls(self, html_root):
+        """Parse the summary URLs when there are multiple summaries on the page.
+
+        Parameters
+        ----------
+        html_root: etree.Element, required
+            The HTML tree.
+
+        Returns
+        -------
+        urls: list of str,
+            The URLs of session summaries.
+        """
+        summary_urls = set()
+        for anchor in html_root.iterdescendants(tag='a'):
+            path_and_query = anchor.get('href')
+            if path_and_query is None:
+                continue
+
+            path_and_query = path_and_query.lower()
+            if '/pls/steno/steno2015.sumar?' in path_and_query:
+                full_url = self.__url_builder.build_full_URL(path_and_query)
+                summary_urls.add(full_url)
+        return list(summary_urls)
+
+    def __parse_session_summary(self, html_root):
+        """Parse the summary of a single session.
+
+        Parameters
+        ----------
+        html_root: etree.Element, required
+            The HTML tree.
+
+        Returns
+        -------
+        summary: dict
+            The summary of the session.
+        """
+        summary_rows = self.__parse_summary_rows(html_root)
+        transcript_url = self.__parse_full_transcript_url(html_root)
+        return {'full_transcript_url': transcript_url, 'summary': summary_rows}
 
     def __parse_summary_rows(self, html_root):
         """Parse summary rows from page.

@@ -45,14 +45,15 @@ def main(args):
     for date, url in iter_session_URLs(args):
         logging.info("Crawling session summary for date {} from {}.".format(
             date.strftime("%Y-%m-%d"), url))
-        summary = SessionSummaryCrawler().crawl(url)
-        transcript = SessionTranscriptCrawler(date).crawl(
-            summary['full_transcript_url'])
-        summary.update(transcript)
-        with open("{}.json".format(date.strftime("%Y-%m-%d")),
-                  'w',
-                  encoding='utf8') as f:
-            json.dump(summary, f, indent=2, ensure_ascii=False)
+        summaries = SessionSummaryCrawler().crawl(url)
+        for summary in summaries:
+            transcript = SessionTranscriptCrawler(date).crawl(
+                summary['full_transcript_url'])
+            summary.update(transcript)
+            with open("{}.json".format(date.strftime("%Y-%m-%d")),
+                      'w',
+                      encoding='utf8') as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
 
 
 def valid_year(year):
