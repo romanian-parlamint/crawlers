@@ -50,7 +50,9 @@ def main(args):
             transcript = SessionTranscriptCrawler(date).crawl(
                 summary['full_transcript_url'])
             summary.update(transcript)
-            with open("{}.json".format(date.strftime("%Y-%m-%d")),
+            session_id = summary['session_id']
+            with open("{date}-{id}.json".format(date=date.strftime("%Y-%m-%d"),
+                                                id=session_id),
                       'w',
                       encoding='utf8') as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)

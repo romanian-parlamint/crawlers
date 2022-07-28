@@ -3,10 +3,13 @@ import logging
 from core.navigation import UrlBuilder
 from core.navigation import Browser
 from core.crawling.utils import get_element_text
+from urllib.parse import urlparse as parse_url
+from urllib.parse import parse_qs
 
 
 class SessionSummaryCrawler:
     """Crawl session summary from the summary page."""
+    SessionSummaryUrlPath = "/pls/steno/steno2015.sumar?"
 
     def __init__(self):
         """Create a new instance of session summary crawler."""
@@ -77,7 +80,7 @@ class SessionSummaryCrawler:
                 continue
 
             path_and_query = path_and_query.lower()
-            if '/pls/steno/steno2015.sumar?' in path_and_query:
+            if SessionSummaryCrawler.SessionSummaryUrlPath in path_and_query:
                 full_url = self.__url_builder.build_full_URL(path_and_query)
                 summary_urls.add(full_url)
         return list(summary_urls)
@@ -97,7 +100,11 @@ class SessionSummaryCrawler:
         """
         summary_rows = self.__parse_summary_rows(html_root)
         transcript_url = self.__parse_full_transcript_url(html_root)
-        return {'full_transcript_url': transcript_url, 'summary': summary_rows}
+        return {
+            'session_id': self.__parse_session_id(html_root),
+            'full_transcript_url': transcript_url,
+            'summary': summary_rows
+        }
 
     def __parse_summary_rows(self, html_root):
         """Parse summary rows from page.
@@ -175,6 +182,29 @@ class SessionSummaryCrawler:
         links = [a for a in resources_div.iterdescendants(tag="a")]
         path_and_query = links[1].get('href')
         return self.__url_builder.build_full_URL(path_and_query)
+
+    def __parse_session_id(self, html_root):
+        """Parse the id of the session from summary page.
+
+        Parameters
+        ----------
+        html_root: etree.Element, required
+            The HTML tree.
+
+        Returns
+        -------
+        session_id: str
+            The id of the session.
+        """
+        urls = self.__parse_summary_urls(html_root)
+        for url in urls:
+            query_string = parse_qs(parse_url(url).query)
+            if 'ids' in query_string:
+                return query_string['ids'][0]
+
+        logging.error("Could not parse session id from URLS [{}]".format(
+            ', '.join(list(urls))))
+        return None
 
 
 class SummaryRowContentsParser:
