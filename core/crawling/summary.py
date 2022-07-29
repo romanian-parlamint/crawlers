@@ -2,19 +2,21 @@
 import logging
 from core.navigation import UrlBuilder
 from core.navigation import Browser
-from core.crawling.utils import get_element_text
 from urllib.parse import urlparse as parse_url
 from urllib.parse import parse_qs
 
 
 class SessionSummaryCrawler:
     """Crawl session summary from the summary page."""
+
     SessionSummaryUrlPath = "/pls/steno/steno2015.sumar?"
 
     def __init__(self):
         """Create a new instance of session summary crawler."""
         self.__url_builder = UrlBuilder()
         self.__browser = Browser()
+        self.__summary_parser = SessionSummaryParser()
+        self.__summary_urls_parser = SummaryUrlsParser()
 
     def crawl(self, session_url):
         """Crawl the summary of the session.
@@ -34,15 +36,15 @@ class SessionSummaryCrawler:
             logging.info(
                 "The URL {} contains the summary of a single session.".format(
                     session_url))
-            return [self.__parse_session_summary(html_root)]
+            return [self.__summary_parser.parse(html_root)]
         else:
             logging.info(
                 "The URL {} contains the summary of multiple sessions.".format(
                     session_url))
             summaries = []
-            for summary_url in self.__parse_summary_urls(html_root):
+            for summary_url in self.__summary_urls_parser.parse(html_root):
                 html_root = self.__browser.load_page(summary_url)
-                summaries.append(self.__parse_session_summary(html_root))
+                summaries.append(self.__summary_parser.parse(html_root))
         return summaries
 
     def __is_single_session_summary(self, html_root):
@@ -58,9 +60,17 @@ class SessionSummaryCrawler:
         is_single_session_summary: bool
             True if the HTML contains the summary of a single session; False otherwise.
         """
-        return len(self.__parse_summary_urls(html_root)) == 1
+        return len(self.__summary_urls_parser.parse(html_root)) == 1
 
-    def __parse_summary_urls(self, html_root):
+
+class SummaryUrlsParser:
+    """Parse the summary URLs from page."""
+
+    def __init__(self):
+        """Create a new instance of the class."""
+        self.__url_builder = UrlBuilder()
+
+    def parse(self, html_root):
         """Parse the summary URLs when there are multiple summaries on the page.
 
         Parameters
@@ -74,18 +84,49 @@ class SessionSummaryCrawler:
             The URLs of session summaries.
         """
         summary_urls = set()
-        for anchor in html_root.iterdescendants(tag='a'):
-            path_and_query = anchor.get('href')
-            if path_and_query is None:
+        for title_box in html_root.cssselect("div.boxTitle"):
+            full_url = self.__get_full_url(title_box.getparent())
+            if full_url is None:
                 continue
 
-            path_and_query = path_and_query.lower()
-            if SessionSummaryCrawler.SessionSummaryUrlPath in path_and_query:
-                full_url = self.__url_builder.build_full_URL(path_and_query)
-                summary_urls.add(full_url)
+            summary_urls.add(full_url)
+
+        for anchor in html_root.cssselect("div.resurse-list a[href*='sumar']"):
+            summary_urls.add(self.__get_full_url(anchor))
         return list(summary_urls)
 
-    def __parse_session_summary(self, html_root):
+    def __get_full_url(self, anchor):
+        """Get the full URL from the 'href' property of the given anchor element.
+
+        Parameters
+        ----------
+        anchor: etree.Element, required
+            The anchor from which to extract the URL.
+
+        Returns
+        -------
+        full_url: str
+            The URL retrieved from anchor prepended with domain name and protocol.
+        """
+        path_and_query = anchor.get('href')
+        if path_and_query is None:
+            logging.error(
+                "Could not find the link for session summary for {}.".format(
+                    anchor.text_content()))
+            return None
+        full_url = self.__url_builder.build_full_URL(path_and_query)
+        return full_url
+
+
+class SessionSummaryParser:
+    """Parse the session summary."""
+
+    def __init__(self):
+        """Create a new instance of the class."""
+        self.__url_builder = UrlBuilder()
+        self.__summary_urls_parser = SummaryUrlsParser()
+
+    def parse(self, html_root):
         """Parse the summary of a single session.
 
         Parameters
@@ -102,9 +143,29 @@ class SessionSummaryCrawler:
         transcript_url = self.__parse_full_transcript_url(html_root)
         return {
             'session_id': self.__parse_session_id(html_root),
+            'session_title': self.__parse_session_title(html_root),
             'full_transcript_url': transcript_url,
             'summary': summary_rows
         }
+
+    def __parse_session_title(self, html_root):
+        """Parse session title from HTML markup.
+
+        Parameters
+        ----------
+        html_root: etree.Element, required
+            The HTML tree.
+
+        Returns
+        -------
+        title: str
+            The title of the session if found; otherwise None.
+        """
+        headings = [
+            title for title in html_root.xpath("//div[@class='box-title']/h3")
+        ]
+        session_title = headings[-1]
+        return session_title.text_content()
 
     def __parse_summary_rows(self, html_root):
         """Parse summary rows from page.
@@ -196,7 +257,7 @@ class SessionSummaryCrawler:
         session_id: str
             The id of the session.
         """
-        urls = self.__parse_summary_urls(html_root)
+        urls = self.__summary_urls_parser.parse(html_root)
         for url in urls:
             query_string = parse_qs(parse_url(url).query)
             if 'ids' in query_string:
