@@ -336,9 +336,10 @@ class SessionContentParser:
         """
         text = get_element_text(element)
 
-        annotation = None
-        comments = [i for i in element.iterdescendants(tag='i')]
-        if len(comments) > 0:
-            annotation = get_element_text(comments[0])
-
-        return {'text': text, 'annotation': annotation}
+        annotations_text = [
+            i.text_content() for i in element.iterdescendants(tag='i')
+        ]
+        # We consider an annotation only the text in parentheses
+        pattern = r"\([^)]+\)"
+        annotations = [a for a in annotations_text if re.match(pattern, a)]
+        return {'text': text, 'annotations': annotations}
