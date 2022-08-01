@@ -5,6 +5,7 @@ import datetime
 from core.navigation import UrlBuilder
 from core.navigation import Browser
 from core.crawling.utils import get_element_text
+from core.crawling.speakers import SpeakerInfoParser
 
 
 class SessionTranscriptCrawler:
@@ -220,6 +221,10 @@ class SessionStartEndParser:
 class SessionContentParser:
     """Parse the contents of session segments."""
 
+    def __init__(self):
+        """Create a new instance of the class."""
+        self.__speaker_parser = SpeakerInfoParser()
+
     def parse_contents(self, sections, end_mark):
         """Parse the contents of session.
 
@@ -256,7 +261,7 @@ class SessionContentParser:
         content_elements = [
             e for e in section.iterdescendants() if e.tag in ['p', 'li']
         ]
-        speaker = self.__parse_speaker(content_elements[0])
+        speaker = self.__speaker_parser.parse(content_elements[0])
         contents = []
         for c in content_elements[1:]:
             content = self.__parse_content(c)
@@ -270,56 +275,6 @@ class SessionContentParser:
             contents.append(content)
 
         return {'speaker': speaker, 'contents': contents}
-
-    def __parse_speaker(self, element):
-        """Parse speaker info from the provided element.
-
-        Parameters
-        ----------
-        element: etree.Element, required
-            The element to parse.
-
-        Returns
-        -------
-        speaker: dict
-            The parsed speaker information.
-        """
-        fonts = [f for f in element.iterdescendants(tag='font')]
-        if len(fonts) == 0:
-            # The element doesn't contain the name of a speaker
-            return None
-
-        text = element.text_content().strip()
-
-        # Parse full name of the speaker
-        name_element_text = get_element_text(fonts[0])
-        sex = 'M' if name_element_text.startswith("Domnul") else 'F'
-        full_name = re.sub(r'domnul|doamna|(\(.+\)*)?:', '', name_element_text,
-                           0, re.MULTILINE | re.IGNORECASE)
-        full_name = full_name.strip()
-
-        # Get profile URL if present
-        profile_url = None
-        anchors = [
-            a for a in element.iterdescendants(tag='a')
-            if a.get('target') == "PARLAMENTARI"
-        ]
-        if len(anchors) > 0:
-            profile_url = anchors[0].get('href')
-
-        # Get annotation if present
-        annotation = None
-        comments = [i for i in element.iterdescendants(tag='i')]
-        if len(comments) > 0:
-            annotation = get_element_text(comments[0])
-
-        return {
-            'text': text,
-            'full_name': full_name,
-            'profile_url': profile_url,
-            'sex': sex,
-            'annotation': annotation
-        }
 
     def __parse_content(self, element):
         """Get the content of the given element.
