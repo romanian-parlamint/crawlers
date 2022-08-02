@@ -47,6 +47,7 @@ class SpeakerInfoParser:
         ]
         if len(anchors) > 0:
             profile_url = anchors[0].get('href')
+            profile_url = self.__ulr_builder.build_full_URL(profile_url)
 
         # Get annotation if present
         annotation = None
