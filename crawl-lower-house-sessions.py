@@ -30,8 +30,13 @@ def iter_session_URLs(args):
     else:
         crawler = SessionUrlsCrawler()
         for year in args.years:
-            for date, url in crawler.crawl(year):
-                yield date, url
+            try:
+                for date, url in crawler.crawl(year):
+                    yield date, url
+            except Exception as e:
+                logging.error("Could not crawl session URLs for year %s.",
+                              year,
+                              exc_info=e)
 
 
 def main(args):
@@ -45,17 +50,22 @@ def main(args):
     for date, url in iter_session_URLs(args):
         logging.info("Crawling session summary for date {} from {}.".format(
             date.strftime("%Y-%m-%d"), url))
-        summaries = SessionSummaryCrawler().crawl(url)
-        for summary in summaries:
-            transcript = SessionTranscriptCrawler(date).crawl(
-                summary['full_transcript_url'])
-            summary.update(transcript)
-            session_id = summary['session_id']
-            with open("{date}-{id}.json".format(date=date.strftime("%Y-%m-%d"),
-                                                id=session_id),
-                      'w',
-                      encoding='utf8') as f:
-                json.dump(summary, f, indent=2, ensure_ascii=False)
+        try:
+            summaries = SessionSummaryCrawler().crawl(url)
+            for summary in summaries:
+                transcript = SessionTranscriptCrawler(date).crawl(
+                    summary['full_transcript_url'])
+                summary.update(transcript)
+                session_id = summary['session_id']
+                with open("{date}-{id}.json".format(
+                        date=date.strftime("%Y-%m-%d"), id=session_id),
+                          'w',
+                          encoding='utf8') as f:
+                    json.dump(summary, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            logging.error("Could not crawl session contents from URL %s.",
+                          url,
+                          exc_info=e)
 
 
 def valid_year(year):
@@ -68,7 +78,7 @@ def valid_year(year):
     """
     year = int(year)
     max_year = datetime.date.year
-    if year < 2000 or year > max_year:
+    if year <= 2000 or year > max_year:
         raise ArgumentTypeError(
             "Year must be betweer 2000 and {} inclusive.".format(max_year))
     return year
@@ -87,7 +97,7 @@ def parse_arguments():
                        help="List of years for which to crawl transcripts.",
                        dest='years',
                        type=int,
-                       choices=range(1999,
+                       choices=range(2000,
                                      datetime.date.today().year + 1),
                        nargs='+')
     parser.add_argument(
