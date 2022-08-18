@@ -10,7 +10,6 @@ class SpeakerInfoParser:
     def __init__(self):
         """Create a new instance of the class."""
         self.__ulr_builder = UrlBuilder()
-        self.__browser = Browser()
 
     def parse(self, element):
         """Parse speaker info from the provided element.
@@ -31,13 +30,15 @@ class SpeakerInfoParser:
 
         name_with_prefix = name_element.text_content()
 
-        return {
+        speaker = {
             'text': element.text_content().strip(),
             'full_name': self.__parse_full_name(name_with_prefix),
             'profile_url': self.__parse_profile_url(element),
             'sex': self.__parse_speaker_sex(name_with_prefix),
             'annotation': self.__parse_annotation(element)
         }
+
+        return speaker
 
     def __get_name_element(self, element):
         """Get the name element from the provided element, if present.
@@ -134,3 +135,81 @@ class SpeakerInfoParser:
         if len(comments) > 0:
             annotation = comments[0].text_content()
         return annotation
+
+
+class SpeakerProfileCrawler:
+    """Crawl speaker profile page."""
+
+    def __init__(self):
+        """Create a new instance of the class."""
+        self.__browser = Browser()
+
+    def crawl(self, profile_url):
+        """Crawl speaker profile data from provided URL.
+
+        Parameters
+        ----------
+        profile_url: str, required
+            The profile URL of the speaker.
+
+        Returns
+        -------
+        profile_info: dict
+            The information parsed from the profile page.
+        """
+        html_root = self.__browser.load_page(profile_url)
+        first_name, last_name = self.__parse_name(html_root)
+        profile_info = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'mp_type': self.__parse_mp_type(html_root),
+            'affiliation': None,
+            'profile_picture': None
+        }
+        return profile_info
+
+    def __parse_name(self, html_root):
+        """Parse the first and last names from the provided element.
+
+        Parameters
+        ----------
+        html_root: etree.Element, required
+            The HTML root of the profile page.
+
+        Returns
+        -------
+        (first_name, last_name): tuple of (list of str, list of str)
+            The first and last names of the speaker split into constituent parts by space.
+        """
+        name_elements = list(html_root.cssselect('div.boxTitle h1'))
+        if len(name_elements) == 0:
+            return (None, None)
+        name = name_elements[0].text_content()
+        first_name, last_name = [], []
+        for part in name.split():
+            if part.isupper():
+                last_name.append(part)
+            else:
+                first_name.append(part)
+        return first_name, last_name
+
+    def __parse_mp_type(self, html_root):
+        """Parse the type of member of parliament from profile page.
+
+        Parameters
+        ----------
+        html_root: etree.Element, required
+            The HTML root of the profile page.
+
+        Returns
+        -------
+        mp_type: str
+            The type of member of parliament; can be either 'Senator' or 'Deputy'.
+        """
+        profile_sections = list(html_root.cssselect('div.boxDep h3'))
+        member_type = profile_sections[0]
+        member_type_text = member_type.text_content()
+        if 'deputat' in member_type_text.lower():
+            return 'Deputy'
+        else:
+            return 'Senator'
