@@ -51,6 +51,8 @@ class SessionUrlsCrawler:
         result = []
         for a in html_root.iterdescendants(tag='a'):
             href = a.get('href')
+            if href is None:
+                continue
             match = re.search(SessionUrlsCrawler.SessionUrlRegex, href,
                               re.MULTILINE)
             if match:
