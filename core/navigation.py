@@ -1,5 +1,4 @@
 """Modules required for navigation."""
-import requests
 import logging
 from lxml import html
 from selenium.webdriver import Firefox
