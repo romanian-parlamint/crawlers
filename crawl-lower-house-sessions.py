@@ -9,6 +9,7 @@ from core.crawling.utils import SessionUrlsCrawler
 from core.crawling.summary import SessionSummaryCrawler
 from core.crawling.session import SessionTranscriptCrawler
 import json
+from pathlib import Path
 
 
 def iter_session_URLs(args):
@@ -39,6 +40,31 @@ def iter_session_URLs(args):
                               exc_info=e)
 
 
+def save_session_transcript(output_dir, transcript, session_date, session_id):
+    """Save session transcript into a JSON file.
+
+    Parameters
+    ----------
+    output_dir: str, required
+        The directory where to save the session transcript.
+    transcript: dict, required
+        The transcript to save.
+    session_date: datetime.date, required
+        The session date; it will be included in file name.
+    session_id: str, required
+        The id of the session; will be included in file name to differentiate sessions from the same day.
+    """
+    output_dir = Path(output_dir)
+    if not output_dir.exists():
+        logging.info("Creating directory {}.".format(str(output_dir)))
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    file_name = output_dir / "{date}-{id}.json".format(
+        date=session_date.strftime("%Y-%m-%d"), id=session_id)
+    with open(str(file_name), 'w', encoding='utf8') as f:
+        json.dump(transcript, f, indent=2, ensure_ascii=False)
+
+
 def main(args):
     """Crawl session transcripts."""
     if args.date:
@@ -57,11 +83,8 @@ def main(args):
                     summary['full_transcript_url'])
                 summary.update(transcript)
                 session_id = summary['session_id']
-                with open("{date}-{id}.json".format(
-                        date=date.strftime("%Y-%m-%d"), id=session_id),
-                          'w',
-                          encoding='utf8') as f:
-                    json.dump(summary, f, indent=2, ensure_ascii=False)
+                save_session_transcript(args.output_dir, summary, date,
+                                        session_id)
         except Exception as e:
             logging.error("Could not crawl session contents from URL %s.",
                           url,
@@ -100,6 +123,10 @@ def parse_arguments():
                        choices=range(2000,
                                      datetime.date.today().year + 1),
                        nargs='+')
+    parser.add_argument('--output-dir',
+                        help="The path of the output directory.",
+                        type=str,
+                        default='./data/sessions/')
     parser.add_argument(
         '-l',
         '--log-level',
