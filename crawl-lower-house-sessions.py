@@ -12,6 +12,28 @@ import json
 from pathlib import Path
 
 
+def get_parsed_sessions(transcripts_dir):
+    """Create a set of dates for which exists a session transcript in the provided directory.
+
+    Parameters
+    ----------
+    transcripts_dir: str, required
+        The path of the directory containing parsed session transcripts.
+
+    Returns
+    -------
+    session_dates: set of str
+        The dates of the parsed sessions taken from file names.
+    """
+    session_dates = set()
+    transcripts_dir = Path(transcripts_dir)
+    for file_name in transcripts_dir.glob("*.json"):
+        idx = file_name.stem.rfind('-')
+        session_date = file_name.stem[:idx]
+        session_dates.add(session_date)
+    return session_dates
+
+
 def iter_session_URLs(args):
     """Iterate over session URLs from the arguments.
 
@@ -29,15 +51,23 @@ def iter_session_URLs(args):
         url_builder = UrlBuilder()
         yield args.date, url_builder.build_URL_for_session(args.date)
     else:
+        crawled_dates = set()
+        if not args.force:
+            crawled_dates = get_parsed_sessions(args.output_dir)
         crawler = SessionUrlsCrawler()
         for year in args.years:
             try:
                 for date, url in crawler.crawl(year):
-                    yield date, url
+                    date_str = date.strftime("%Y-%m-%d")
+                    if date_str in crawled_dates:
+                        message = "Date %s is already parsed; skipping."
+                        logging.info(message, date_str)
+                        continue
+                    else:
+                        yield date, url
             except Exception as e:
-                logging.error("Could not crawl session URLs for year %s.",
-                              year,
-                              exc_info=e)
+                message = "Could not crawl session URLs for year %s."
+                logging.error(message, year, exc_info=e)
 
 
 def save_session_transcript(output_dir, transcript, session_date, session_id):
@@ -123,6 +153,12 @@ def parse_arguments():
                        choices=range(2000,
                                      datetime.date.today().year + 1),
                        nargs='+')
+    parser.add_argument('--force',
+                        help="""
+                       When provided together with the '--year' argument specifies
+                       to ignore already crawled sessions and start the crawling anew.
+                       """,
+                        action='store_true')
     parser.add_argument('--output-dir',
                         help="The path of the output directory.",
                         type=str,
