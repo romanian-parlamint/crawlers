@@ -137,6 +137,33 @@ def valid_year(year):
     return year
 
 
+def configure_logging(log_level, log_file):
+    """Configure logging.
+
+    Parameters
+    ----------
+    log_level: str, required
+        The level of messages to display in logs.
+    log_file: str, required
+        The path of the log file.
+    """
+    if log_file is not None:
+        logging.basicConfig(
+            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+            filename=log_file,
+            filemode='w',
+            level=log_level)
+        console = logging.StreamHandler()
+        console.setLevel(log_level)
+        formatter = logging.Formatter(
+            '%(name)-12s: %(levelname)-8s %(message)s')
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
+    else:
+        logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
+                            level=log_level)
+
+
 def parse_arguments():
     """Parse command-line arguments."""
     parser = ArgumentParser(
@@ -155,9 +182,9 @@ def parse_arguments():
                        nargs='+')
     parser.add_argument('--force',
                         help="""
-                       When provided together with the '--year' argument specifies
-                       to ignore already crawled sessions and start the crawling anew.
-                       """,
+                        When provided together with the '--year' argument specifies
+                        to ignore already crawled sessions and start the crawling anew.
+                        """,
                         action='store_true')
     parser.add_argument('--output-dir',
                         help="The path of the output directory.",
@@ -169,12 +196,18 @@ def parse_arguments():
         help="The level of details to print when running.",
         choices=['debug', 'info', 'warning', 'error', 'critical'],
         default='info')
+    parser.add_argument('--log-file',
+                        help="""
+                        Specifies the file where to log messages.
+                        If not provided the log messages will be saved only to console.
+                        """,
+                        default=None)
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_arguments()
-    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',
-                        level=getattr(logging, args.log_level.upper()))
+    log_level = getattr(logging, args.log_level.upper())
+    configure_logging(log_level, args.log_file)
     main(args)
     logging.info("That's all folks!")
