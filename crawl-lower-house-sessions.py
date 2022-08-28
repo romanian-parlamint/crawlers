@@ -181,7 +181,6 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
-    log_level = getattr(logging, args.log_level.upper())
-    configure_logging(log_level, args.log_file)
+    configure_logging(args.log_level, args.log_file)
     main(args)
     logging.info("That's all folks!")
