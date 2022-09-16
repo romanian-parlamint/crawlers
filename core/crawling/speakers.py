@@ -88,6 +88,8 @@ class SpeakerInfoParser:
         full_name: str
             The full name of the speaker.
         """
+        # TODO: Sometimes the name with prefix is mistyped as 'domnule first name last name',
+        #       which is not handled by the regex below.
         full_name = re.sub(r'domnul|doamna|(\(.+\)*)?:', '', name_with_prefix,
                            0, re.MULTILINE | re.IGNORECASE)
         return full_name.strip()
