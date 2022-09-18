@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 """Crawl sessions of Romanian Lower House."""
-from argparse import ArgumentParser
-from argparse import ArgumentTypeError
 import datetime
 import logging
-from core.navigation import UrlBuilder
-from core.crawling.utils import SessionUrlsCrawler
-from core.crawling.summary import SessionSummaryCrawler
-from core.crawling.session import SessionTranscriptCrawler
 import json
+from argparse import ArgumentParser
+from argparse import ArgumentTypeError
 from pathlib import Path
-from utils.loggingutils import configure_logging
+from framework.core.navigation import UrlBuilder
+from framework.core.crawling.utils import SessionUrlsCrawler
+from framework.core.crawling.summary import SessionSummaryCrawler
+from framework.core.crawling.session import SessionTranscriptCrawler
+from framework.utils.loggingutils import configure_logging
 
 
 def get_parsed_sessions(transcripts_dir):
@@ -163,7 +163,7 @@ def parse_arguments():
     parser.add_argument('--output-dir',
                         help="The path of the output directory.",
                         type=str,
-                        default='./data/sessions/')
+                        default='data/sessions/')
     parser.add_argument(
         '-l',
         '--log-level',

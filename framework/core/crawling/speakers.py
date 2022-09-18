@@ -1,7 +1,7 @@
 """Module responsible for crawling speaker info."""
-from core.navigation import UrlBuilder
-from core.navigation import Browser
 import re
+from framework.core.navigation import UrlBuilder
+from framework.core.navigation import Browser
 
 
 class SpeakerInfoParser:

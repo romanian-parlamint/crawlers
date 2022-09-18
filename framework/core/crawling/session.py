@@ -2,10 +2,10 @@
 import logging
 import re
 import datetime
-from core.navigation import UrlBuilder
-from core.navigation import Browser
-from core.crawling.utils import get_element_text
-from core.crawling.speakers import SpeakerInfoParser
+from framework.core.navigation import UrlBuilder
+from framework.core.navigation import Browser
+from framework.core.crawling.utils import get_element_text
+from framework.core.crawling.speakers import SpeakerInfoParser
 
 
 class SessionTranscriptCrawler:

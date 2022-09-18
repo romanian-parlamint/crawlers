@@ -1,8 +1,8 @@
 """Modules responsible for data crawling."""
 import datetime
 import re
-from core.navigation import UrlBuilder
-from core.navigation import Browser
+from framework.core.navigation import UrlBuilder
+from framework.core.navigation import Browser
 
 
 def get_element_text(element):

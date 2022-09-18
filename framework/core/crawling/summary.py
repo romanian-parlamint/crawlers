@@ -1,9 +1,9 @@
 """Module responsible for crawling session summary."""
 import logging
-from core.navigation import UrlBuilder
-from core.navigation import Browser
 from urllib.parse import urlparse as parse_url
 from urllib.parse import parse_qs
+from framework.core.navigation import UrlBuilder
+from framework.core.navigation import Browser
 
 
 class SessionSummaryCrawler:
