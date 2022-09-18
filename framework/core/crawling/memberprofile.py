@@ -28,6 +28,8 @@ class MemberProfileCrawler:
         """
         html = self.__browser.load_page(profile_url)
         profile_info = self.__parser.parse_profile_info(html)
-        profile_info['profile_image'] = self.__url_builder.build_full_URL(
-            profile_info['profile_image'])
+        profile_image = profile_info['profile_image']
+        if profile_image is not None:
+            profile_info['profile_image'] = self.__url_builder.build_full_URL(
+                profile_image)
         return profile_info
