@@ -17,18 +17,23 @@ def main(args):
     args: argparse.Namespace, required
         The command-line arguments of the script.
     """
+    logging.info("Searching profile URLs in session transcripts from %s.",
+                 args.sessions_dir)
     data = {}
     for s in load_speakers(args.sessions_dir):
         profile_url = s['profile_url']
         if profile_url not in data:
             data[profile_url] = s['sex']
+    logging.info("Start crawling profile info.")
     records = []
+    crawler = MemberProfileCrawler()
     for profile_url, sex in data.items():
-        crawler = MemberProfileCrawler()
+        logging.info("Crawling profile info for URL %s.", profile_url)
         profile_info = crawler.crawl(profile_url)
         profile_info.update({'profile_url': profile_url, 'sex': sex})
         records.append(profile_info)
-        break
+
+    logging.info("Saving profile data to %s.", args.profile_info_file)
     save_data_frame(pd.DataFrame.from_records(records), args.profile_info_file)
     logging.info("That's all folks!")
 
