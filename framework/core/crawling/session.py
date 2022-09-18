@@ -5,7 +5,7 @@ import datetime
 from framework.core.navigation import UrlBuilder
 from framework.core.navigation import Browser
 from framework.core.crawling.utils import get_element_text
-from framework.core.crawling.speakers import SpeakerInfoParser
+from framework.core.crawling.speakerinfo import SpeakerInfoParser
 
 
 class SessionTranscriptCrawler:
