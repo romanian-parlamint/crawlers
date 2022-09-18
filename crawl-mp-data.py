@@ -28,10 +28,15 @@ def main(args):
     records = []
     crawler = MemberProfileCrawler()
     for profile_url, sex in data.items():
-        logging.info("Crawling profile info for URL %s.", profile_url)
-        profile_info = crawler.crawl(profile_url)
-        profile_info.update({'profile_url': profile_url, 'sex': sex})
-        records.append(profile_info)
+        try:
+            logging.info("Crawling profile info for URL %s.", profile_url)
+            profile_info = crawler.crawl(profile_url)
+            profile_info.update({'profile_url': profile_url, 'sex': sex})
+            records.append(profile_info)
+        except Exception as e:
+            logging.error("Could not crawl session contents from URL %s.",
+                          profile_url,
+                          exc_info=e)
 
     logging.info("Saving profile data to %s.", args.profile_info_file)
     save_data_frame(pd.DataFrame.from_records(records), args.profile_info_file)
