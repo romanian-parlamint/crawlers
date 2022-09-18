@@ -23,6 +23,7 @@ def main(args):
     for profile_url, sex in data.items():
         crawler = MemberProfileCrawler()
         profile_info = crawler.crawl(profile_url)
+        profile_info.update({'profile_url': profile_url, 'sex': sex})
         print(profile_info)
         break
     logging.info("That's all folks!")
