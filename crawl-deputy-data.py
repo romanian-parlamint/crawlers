@@ -2,9 +2,11 @@
 """Crawl deputy data."""
 import argparse
 import logging
+import pandas as pd
 from framework.utils.loggingutils import configure_logging
 from framework.utils.sessionutils import load_speakers
 from framework.core.crawling.memberprofile import MemberProfileCrawler
+from framework.utils.dataframeutils import save_data_frame
 
 
 def main(args):
@@ -20,12 +22,14 @@ def main(args):
         profile_url = s['profile_url']
         if profile_url not in data:
             data[profile_url] = s['sex']
+    records = []
     for profile_url, sex in data.items():
         crawler = MemberProfileCrawler()
         profile_info = crawler.crawl(profile_url)
         profile_info.update({'profile_url': profile_url, 'sex': sex})
-        print(profile_info)
+        records.append(profile_info)
         break
+    save_data_frame(pd.DataFrame.from_records(records), args.profile_info_file)
     logging.info("That's all folks!")
 
 
@@ -38,6 +42,10 @@ def parse_arguments():
         help="The path of the directory containing crawled sessions.",
         type=str,
         default="./data/sessions/")
+    parser.add_argument('--profile-info-file',
+                        help="The path of the CSV file where to save data.",
+                        type=str,
+                        default="./data/speakers/profile-info.csv")
     parser.add_argument(
         '-l',
         '--log-level',
