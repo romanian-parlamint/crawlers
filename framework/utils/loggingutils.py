@@ -10,7 +10,7 @@ def configure_logging(log_level, log_file=None):
     ----------
     log_level: str, required
         The level of messages to display in logs.
-    log_file: str, required
+    log_file: str, optional
         The path of the log file.
     """
     log_level = getattr(logging, log_level.upper())
