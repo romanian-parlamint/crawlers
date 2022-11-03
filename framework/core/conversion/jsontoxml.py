@@ -4,6 +4,7 @@ from pathlib import Path
 from .jsonutils import SessionTranscript
 from .xmlcreation import SessionIdBuilder
 from .xmlcreation import SessionTitleBuilder
+from .xmlcreation import MeetingElementContentsBuilder
 
 
 class SessionTranscriptConverter:
@@ -34,6 +35,7 @@ class SessionTranscriptConverter:
         session_transcript = SessionTranscript(self.__input_file)
         self.__build_session_id(session_transcript)
         self.__build_session_title(session_transcript)
+        self.__build_meeting_contents(session_transcript)
 
     def __build_session_id(self, session_transcript: SessionTranscript):
         """Build session id.
@@ -59,6 +61,18 @@ class SessionTranscriptConverter:
         """
         builder = SessionTitleBuilder(session_transcript, self.__output_file)
         builder.build_session_title()
+
+    def __build_meeting_contents(self, session_transcript):
+        """Build meeting element.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = MeetingElementContentsBuilder(session_transcript,
+                                                self.__output_file)
+        builder.build_meeting_info()
 
     def __build_output_file_path(self, input_file: str,
                                  output_dir: str) -> str:

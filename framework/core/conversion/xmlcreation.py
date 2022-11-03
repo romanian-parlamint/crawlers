@@ -86,3 +86,36 @@ class SessionTitleBuilder:
                 elem.text = Resources.SessionSubtitleEn.format(en_date)
 
         save_xml(self.__xml_root, self.__xml_file)
+
+
+class MeetingElementContentsBuilder:
+    """Builds the contents of the meeting elements."""
+
+    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        """
+        self.__transcript = session_transcript
+        self.__xml_file = xml_file
+        self.__xml_root = load_xml(xml_file)
+
+    @property
+    def xml(self):
+        """Get the root node of the XML."""
+        return self.__xml_root.getroot()
+
+    def build_meeting_info(self):
+        """Build meeting element contents."""
+        session_date = self.__transcript.session_date
+        meeting_n = format_date(session_date, "yyyyMMdd")
+
+        for meeting in self.xml.iterdescendants(tag=XmlElements.meeting):
+            meeting.set(XmlAttributes.meeting_n, meeting_n)
+
+        save_xml(self.__xml_root, self.__xml_file)
