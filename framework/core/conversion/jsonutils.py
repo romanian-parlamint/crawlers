@@ -3,7 +3,7 @@ import json
 import datetime
 
 
-class SessionWrapper:
+class SessionTranscript:
     """Ecapsulates session transcription JSON."""
 
     def __init__(self, input_file):

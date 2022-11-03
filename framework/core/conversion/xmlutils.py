@@ -77,6 +77,15 @@ class XmlAttributes:
     corresp = 'corresp'
 
 
+class Resources:
+    """Resource strings."""
+
+    SessionTitleRo = "Corpus parlamentar român ParlaMint-RO, ședința Camerei Deputaților din {}"
+    SessionSubtitleRo = "Stenograma ședinței Camerei Deputaților din România din {}"
+    SessionTitleEn = "Romanian parliamentary corpus ParlaMint-RO, Regular Session, Chamber of Deputies, {}"
+    SessionSubtitleEn = "Minutes of the session of the Chamber of Deputies of Romania, {}"
+
+
 def load_xml(file_name):
     """Load the specified XML file.
 
