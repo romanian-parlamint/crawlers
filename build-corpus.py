@@ -5,6 +5,7 @@ from argparse import Namespace, ArgumentParser
 from pathlib import Path
 from typing import Generator
 from framework.utils.loggingutils import configure_logging
+from framework.core.conversion.jsontoxml import SessionTranscriptConverter
 
 
 def iter_files(directory: str) -> Generator[Path, None, None]:
@@ -31,7 +32,9 @@ def main(args):
     for f in iter_files(args.input_directory):
         total = total + 1
         try:
-            logging.info("Converting file %s to XML.", f)
+            converter = SessionTranscriptConverter(f, args.session_template,
+                                                   args.output_directory)
+            converter.covert()
             processed = processed + 1
         except Exception as e:
             failed = failed + 1
@@ -57,6 +60,14 @@ def parse_arguments() -> Namespace:
         '--input-directory',
         help="The directory containing session transcripts in JSON format.",
         default='data/sessions/')
+    parser.add_argument('--session-template',
+                        help="The path of the session template file.",
+                        default='data/templates/session-template.xml')
+    parser.add_argument('-o',
+                        '--output-directory',
+                        help="The directory where to save corpus files.",
+                        default="corpus")
+
     parser.add_argument(
         '-l',
         '--log-level',
