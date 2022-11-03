@@ -119,3 +119,33 @@ class MeetingElementContentsBuilder:
             meeting.set(XmlAttributes.meeting_n, meeting_n)
 
         save_xml(self.__xml_root, self.__xml_file)
+
+
+class SessionIdNoBuilder:
+    """Builds the idno element."""
+
+    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        """
+        self.__transcript = session_transcript
+        self.__xml_file = xml_file
+        self.__xml_root = load_xml(xml_file)
+
+    @property
+    def xml(self):
+        """Get the root node of the XML."""
+        return self.__xml_root.getroot()
+
+    def build_session_idno(self):
+        """Build the contents of the idno element."""
+        for idno in self.xml.iterdescendants(tag=XmlElements.idno):
+            if idno.get(XmlAttributes.element_type) == 'URI':
+                idno.text = self.__transcript.transcript_url
+        save_xml(self.__xml_root, self.__xml_file)

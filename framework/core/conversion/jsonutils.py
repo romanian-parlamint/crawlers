@@ -35,6 +35,11 @@ class SessionTranscript:
         start_time = datetime.datetime.fromisoformat(start_time)
         return start_time.date()
 
+    @property
+    def transcript_url(self):
+        """Get the transcript URL."""
+        return self.__json['full_transcript_url']
+
 
 def load_json(file_name: str) -> dict:
     """Load  the JSON file.
