@@ -1,6 +1,7 @@
 """Module responsible for conversion from JSON to  XML."""
 import logging
 from pathlib import Path
+from .xmlcreation import SessionIdBuilder
 
 
 class SessionTranscriptConverter:
@@ -20,6 +21,7 @@ class SessionTranscriptConverter:
             The path of the output directory.
         """
         self.__input_file = input_file
+        self.__session_template = session_template
         self.__output_file = self.__build_output_file_path(
             input_file, output_dir)
 
@@ -27,6 +29,14 @@ class SessionTranscriptConverter:
         """Convert session transcript to XML format."""
         logging.info("Converting from {} to {}.".format(
             self.__input_file, self.__output_file))
+        self.__build_session_id()
+
+    def __build_session_id(self):
+        """Build session id."""
+        session_id_builder = SessionIdBuilder(self.__input_file,
+                                              self.__session_template,
+                                              self.__output_file)
+        session_id_builder.build_session_id()
 
     def __build_output_file_path(self, input_file: str,
                                  output_dir: str) -> str:
