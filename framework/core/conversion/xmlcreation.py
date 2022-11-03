@@ -149,3 +149,38 @@ class SessionIdNoBuilder:
             if idno.get(XmlAttributes.element_type) == 'URI':
                 idno.text = self.__transcript.transcript_url
         save_xml(self.__xml_root, self.__xml_file)
+
+
+class SessionDateBuilder:
+    """Builds the contents of date elements."""
+
+    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        """
+        self.__transcript = session_transcript
+        self.__xml_file = xml_file
+        self.__xml_root = load_xml(xml_file)
+
+    @property
+    def xml(self):
+        """Get the root node of the XML."""
+        return self.__xml_root.getroot()
+
+    def build_date_contents(self):
+        """Build the content of date elements."""
+        session_date = self.__transcript.session_date
+        for date in self.xml.iterdescendants(tag=XmlElements.date):
+            parent_tag = date.getparent().tag
+            if parent_tag == XmlElements.setting or parent_tag == XmlElements.bibl:
+                date.set(XmlAttributes.when,
+                         format_date(session_date, "yyyy-MM-dd"))
+                date.text = format_date(session_date, "dd.MM.yyyy")
+
+        save_xml(self.__xml_root, self.__xml_file)

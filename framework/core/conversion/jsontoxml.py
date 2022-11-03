@@ -6,6 +6,7 @@ from .xmlcreation import SessionIdBuilder
 from .xmlcreation import SessionTitleBuilder
 from .xmlcreation import MeetingElementContentsBuilder
 from .xmlcreation import SessionIdNoBuilder
+from .xmlcreation import SessionDateBuilder
 
 
 class SessionTranscriptConverter:
@@ -38,6 +39,7 @@ class SessionTranscriptConverter:
         self.__build_session_title(session_transcript)
         self.__build_meeting_contents(session_transcript)
         self.__build_idno_contents(session_transcript)
+        self.__build_date_contents(session_transcript)
 
     def __build_session_id(self, session_transcript: SessionTranscript):
         """Build session id.
@@ -86,6 +88,17 @@ class SessionTranscriptConverter:
         """
         builder = SessionIdNoBuilder(session_transcript, self.__output_file)
         builder.build_session_idno()
+
+    def __build_date_contents(self, session_transcript):
+        """Build contents of date elements.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionDateBuilder(session_transcript, self.__output_file)
+        builder.build_date_contents()
 
     def __build_output_file_path(self, input_file: str,
                                  output_dir: str) -> str:
