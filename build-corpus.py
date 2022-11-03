@@ -24,10 +24,14 @@ def iter_files(directory: str) -> Generator[Path, None, None]:
     root_path = Path(directory)
     for file_path in root_path.glob('*.json'):
         yield file_path
+        break
 
 
 def main(args):
     """Entry point of the module."""
+    output_dir = Path(args.output_directory)
+    output_dir.mkdir(exist_ok=True, parents=True)
+
     total, processed, failed = 0, 0, 0
     for f in iter_files(args.input_directory):
         total = total + 1
