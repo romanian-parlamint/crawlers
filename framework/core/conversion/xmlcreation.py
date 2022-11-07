@@ -1,5 +1,6 @@
 """Module responsible for creating XML elements."""
 from babel.dates import format_date
+from lxml import etree
 from .jsonutils import SessionTranscript
 from .xmlutils import load_xml
 from .xmlutils import save_xml
@@ -184,3 +185,77 @@ class SessionDateBuilder:
                 date.text = format_date(session_date, "dd.MM.yyyy")
 
         save_xml(self.__xml_root, self.__xml_file)
+
+
+class SessionSummaryBuilder:
+    """Builds the session summary."""
+
+    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        """
+        self.__transcript = session_transcript
+        self.__xml_file = xml_file
+        self.__xml_root = load_xml(xml_file)
+        self.__debate_section = None
+
+    @property
+    def xml(self) -> etree.Element:
+        """Get the root node of the XML."""
+        return self.__xml_root.getroot()
+
+    @property
+    def debate_section(self) -> etree.Element:
+        """Get the debate section of the XML.
+
+        Returns
+        -------
+        debate_section, Element
+            The debate section element.
+        """
+        if self.__debate_section is not None:
+            return self.__debate_section
+
+        for div in self.xml.iterdescendants(XmlElements.div):
+            if div.get(XmlAttributes.element_type) == "debateSection":
+                self.__debate_section = div
+                return self.__debate_section
+
+    def build_summary(self):
+        """Build the summary of the session."""
+        self.__build_summary_heading()
+
+        if len(self.__transcript.summary) > 0:
+            self.__build_table_of_contents()
+
+        save_xml(self.__xml_root, self.__xml_file)
+
+    def __build_table_of_contents(self):
+        """Build the table of contents using summary elements."""
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, "editorial")
+        note.text = Resources.ToC
+
+        for summary_line in self.__transcript.summary:
+            for content in summary_line.contents:
+                note = etree.SubElement(self.debate_section, XmlElements.note)
+                note.set(XmlAttributes.element_type, "summary")
+                note.text = content.text
+
+    def __build_summary_heading(self):
+        """Build the heading nodes of the summary."""
+        head = etree.SubElement(self.debate_section, XmlElements.head)
+        head.text = Resources.Heading
+
+        session_head = etree.SubElement(self.debate_section, XmlElements.head)
+        session_head.set(XmlAttributes.element_type, "session")
+        session_date = self.__transcript.session_date
+        session_date = format_date(self.__transcript.session_date,
+                                   "d MMMM yyyy")
+        session_head.text = Resources.SessionHeading.format(session_date)

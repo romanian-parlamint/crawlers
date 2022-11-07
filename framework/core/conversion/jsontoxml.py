@@ -7,6 +7,7 @@ from .xmlcreation import SessionTitleBuilder
 from .xmlcreation import MeetingElementContentsBuilder
 from .xmlcreation import SessionIdNoBuilder
 from .xmlcreation import SessionDateBuilder
+from .xmlcreation import SessionSummaryBuilder
 
 
 class SessionTranscriptConverter:
@@ -40,6 +41,63 @@ class SessionTranscriptConverter:
         self.__build_meeting_contents(session_transcript)
         self.__build_idno_contents(session_transcript)
         self.__build_date_contents(session_transcript)
+        self.__build_session_summary(session_transcript)
+
+    def __build_session_summary(self, session_transcript: SessionTranscript):
+        """Build the session summary.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionSummaryBuilder(session_transcript, self.__output_file)
+        builder.build_summary()
+
+    def __build_date_contents(self, session_transcript: SessionTranscript):
+        """Build contents of date elements.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionDateBuilder(session_transcript, self.__output_file)
+        builder.build_date_contents()
+
+    def __build_idno_contents(self, session_transcript: SessionTranscript):
+        """Build idno element.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionIdNoBuilder(session_transcript, self.__output_file)
+        builder.build_session_idno()
+
+    def __build_meeting_contents(self, session_transcript: SessionTranscript):
+        """Build meeting element.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = MeetingElementContentsBuilder(session_transcript,
+                                                self.__output_file)
+        builder.build_meeting_info()
+
+    def __build_session_title(self, session_transcript: SessionTranscript):
+        """Build session title.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionTitleBuilder(session_transcript, self.__output_file)
+        builder.build_session_title()
 
     def __build_session_id(self, session_transcript: SessionTranscript):
         """Build session id.
@@ -54,51 +112,6 @@ class SessionTranscriptConverter:
                                               session_transcript,
                                               self.__output_file)
         session_id_builder.build_session_id()
-
-    def __build_session_title(self, session_transcript):
-        """Build session title.
-
-        Parameters
-        ----------
-        session_transcript: SessionTranscript, required
-            The session transcript.
-        """
-        builder = SessionTitleBuilder(session_transcript, self.__output_file)
-        builder.build_session_title()
-
-    def __build_meeting_contents(self, session_transcript):
-        """Build meeting element.
-
-        Parameters
-        ----------
-        session_transcript: SessionTranscript, required
-            The session transcript.
-        """
-        builder = MeetingElementContentsBuilder(session_transcript,
-                                                self.__output_file)
-        builder.build_meeting_info()
-
-    def __build_idno_contents(self, session_transcript):
-        """Build idno element.
-
-        Parameters
-        ----------
-        session_transcript: SessionTranscript, required
-            The session transcript.
-        """
-        builder = SessionIdNoBuilder(session_transcript, self.__output_file)
-        builder.build_session_idno()
-
-    def __build_date_contents(self, session_transcript):
-        """Build contents of date elements.
-
-        Parameters
-        ----------
-        session_transcript: SessionTranscript, required
-            The session transcript.
-        """
-        builder = SessionDateBuilder(session_transcript, self.__output_file)
-        builder.build_date_contents()
 
     def __build_output_file_path(self, input_file: str,
                                  output_dir: str) -> str:

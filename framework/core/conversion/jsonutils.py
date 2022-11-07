@@ -1,6 +1,7 @@
 """Utility components for JSON files."""
 import json
 import datetime
+from typing import Iterable
 
 
 class SessionTranscript:
@@ -40,6 +41,11 @@ class SessionTranscript:
         """Get the transcript URL."""
         return self.__json['full_transcript_url']
 
+    @property
+    def summary(self):
+        """Get the summary section from session transcript."""
+        return [SummarySegment(segment) for segment in self.__json['summary']]
+
 
 def load_json(file_name: str) -> dict:
     """Load  the JSON file.
@@ -56,3 +62,69 @@ def load_json(file_name: str) -> dict:
     """
     with open(file_name, 'r') as f:
         return json.load(f)
+
+
+class SummaryContentLine:
+    """Encapsulates a content line of a summary segment."""
+
+    def __init__(self, content_line: dict):
+        """Create a new  instance of the class.
+
+        Parameters
+        ----------
+        content_line: dict, required
+            The dictionary with content line.
+        """
+        self.__line = content_line
+
+    @property
+    def text(self) -> str:
+        """Get the text of the content line.
+
+        Returns
+        -------
+        text: str
+            The text of the content line.
+        """
+        return self.__line['line_contents']
+
+    @property
+    def annotation(self) -> str:
+        """Get the annotation of the content line.
+
+        Returns
+        -------
+        annotation: str
+            The annotation text.
+        """
+        return self.__line['annotation']
+
+
+class SummarySegment:
+    """Encapsulates a segment of session summary."""
+
+    def __init__(self, summary_segment: dict):
+        """Create a new instance of the class."""
+        self.__segment = summary_segment
+
+    @property
+    def number(self) -> int:
+        """Get the order number of the current segment.
+
+        Returns
+        -------
+        number: int
+            The order number of the segment.
+        """
+        return int(self.__segment['number'])
+
+    @property
+    def contents(self) -> Iterable[SummaryContentLine]:
+        """Get the contents of the summary segment.
+
+        Returns
+        -------
+        contents: iterable of SummarySegmentContents
+            The contents of the session summary segment.
+        """
+        return [SummaryContentLine(c) for c in self.__segment['contents']]
