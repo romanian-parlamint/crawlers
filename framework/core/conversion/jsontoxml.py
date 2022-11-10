@@ -9,6 +9,7 @@ from .xmlcreation import SessionIdNoBuilder
 from .xmlcreation import SessionDateBuilder
 from .xmlcreation import SessionSummaryBuilder
 from .xmlcreation import SessionHeadingBuilder
+from .xmlcreation import SessionStartEndTimeBuilder
 
 
 class SessionTranscriptConverter:
@@ -44,6 +45,33 @@ class SessionTranscriptConverter:
         self.__build_date_contents(session_transcript)
         self.__build_session_summary(session_transcript)
         self.__build_session_heading(session_transcript)
+        self.__build_session_start_time(session_transcript)
+        self.__build_session_end_time(session_transcript)
+
+    def __build_session_end_time(self, session_transcript: SessionTranscript):
+        """Build the node containing the end time of the session.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionStartEndTimeBuilder(session_transcript,
+                                             self.__output_file)
+        builder.build_session_end_time()
+
+    def __build_session_start_time(self,
+                                   session_transcript: SessionTranscript):
+        """Build the node containing end time of the session.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionStartEndTimeBuilder(session_transcript,
+                                             self.__output_file)
+        builder.build_session_start_time()
 
     def __build_session_heading(self, session_transcript: SessionTranscript):
         """Build the session heading.

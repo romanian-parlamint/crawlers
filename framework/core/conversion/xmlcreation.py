@@ -291,3 +291,29 @@ class SessionHeadingBuilder(DebateSectionBuilder):
         note.set(XmlAttributes.element_type, "editorial")
         note.text = session_title
         super().save_xml()
+
+
+class SessionStartEndTimeBuilder(DebateSectionBuilder):
+    """Builds the note elements containing the session start/end time."""
+
+    def build_session_start_time(self):
+        """Build session start time note."""
+        start_time = self.transcript.start_mark
+        if start_time is None:
+            return
+
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, "time")
+        note.text = start_time
+        super().save_xml()
+
+    def build_session_end_time(self):
+        """Build session end time note."""
+        end_time = self.transcript.end_mark
+        if end_time is None:
+            return
+
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, "time")
+        note.text = end_time
+        super().save_xml()

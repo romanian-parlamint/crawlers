@@ -51,6 +51,22 @@ class SessionTranscript:
         """Get the summary section from session transcript."""
         return [SummarySegment(segment) for segment in self.__json['summary']]
 
+    @property
+    def start_mark(self) -> str:
+        """Get the start mark of the session."""
+        start = self.__json['start']
+        if start is None:
+            return None
+        return start['start_mark']
+
+    @property
+    def end_mark(self) -> str:
+        """Get the end mark of the session."""
+        end = self.__json['end']
+        if end is None:
+            return None
+        return end['end_mark']
+
 
 def load_json(file_name: str) -> dict:
     """Load  the JSON file.
