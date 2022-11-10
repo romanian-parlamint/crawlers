@@ -8,6 +8,7 @@ from .xmlcreation import MeetingElementContentsBuilder
 from .xmlcreation import SessionIdNoBuilder
 from .xmlcreation import SessionDateBuilder
 from .xmlcreation import SessionSummaryBuilder
+from .xmlcreation import SessionHeadingBuilder
 
 
 class SessionTranscriptConverter:
@@ -42,6 +43,18 @@ class SessionTranscriptConverter:
         self.__build_idno_contents(session_transcript)
         self.__build_date_contents(session_transcript)
         self.__build_session_summary(session_transcript)
+        self.__build_session_heading(session_transcript)
+
+    def __build_session_heading(self, session_transcript: SessionTranscript):
+        """Build the session heading.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionHeadingBuilder(session_transcript, self.__output_file)
+        builder.build_session_heading()
 
     def __build_session_summary(self, session_transcript: SessionTranscript):
         """Build the session summary.

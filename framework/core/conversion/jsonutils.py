@@ -23,6 +23,11 @@ class SessionTranscript:
         return self.__json['session_id']
 
     @property
+    def session_title(self) -> str:
+        """Get the session title."""
+        return self.__json['session_title']
+
+    @property
     def session_date(self):
         """Get the session date."""
         session_start = self.__json['start']

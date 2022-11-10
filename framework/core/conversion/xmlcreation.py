@@ -187,8 +187,8 @@ class SessionDateBuilder:
         save_xml(self.__xml_root, self.__xml_file)
 
 
-class SessionSummaryBuilder:
-    """Builds the session summary."""
+class DebateSectionBuilder:
+    """A builder that works on the debate section."""
 
     def __init__(self, session_transcript: SessionTranscript, xml_file: str):
         """Create a new instance of the class.
@@ -204,6 +204,17 @@ class SessionSummaryBuilder:
         self.__xml_file = xml_file
         self.__xml_root = load_xml(xml_file)
         self.__debate_section = None
+
+    @property
+    def transcript(self) -> SessionTranscript:
+        """Get the session transcript.
+
+        Returns
+        -------
+        transcript: SessionTranscript
+            The session transcript.
+        """
+        return self.__transcript
 
     @property
     def xml(self) -> etree.Element:
@@ -227,14 +238,22 @@ class SessionSummaryBuilder:
                 self.__debate_section = div
                 return self.__debate_section
 
+    def save_xml(self):
+        """Save the xml contents."""
+        save_xml(self.__xml_root, self.__xml_file)
+
+
+class SessionSummaryBuilder(DebateSectionBuilder):
+    """Builds the session summary."""
+
     def build_summary(self):
         """Build the summary of the session."""
         self.__build_summary_heading()
 
-        if len(self.__transcript.summary) > 0:
+        if len(self.transcript.summary) > 0:
             self.__build_table_of_contents()
 
-        save_xml(self.__xml_root, self.__xml_file)
+        super().save_xml()
 
     def __build_table_of_contents(self):
         """Build the table of contents using summary elements."""
@@ -242,7 +261,7 @@ class SessionSummaryBuilder:
         note.set(XmlAttributes.element_type, "editorial")
         note.text = Resources.ToC
 
-        for summary_line in self.__transcript.summary:
+        for summary_line in self.transcript.summary:
             for content in summary_line.contents:
                 note = etree.SubElement(self.debate_section, XmlElements.note)
                 note.set(XmlAttributes.element_type, "summary")
@@ -255,7 +274,20 @@ class SessionSummaryBuilder:
 
         session_head = etree.SubElement(self.debate_section, XmlElements.head)
         session_head.set(XmlAttributes.element_type, "session")
-        session_date = self.__transcript.session_date
-        session_date = format_date(self.__transcript.session_date,
-                                   "d MMMM yyyy")
+        session_date = self.transcript.session_date
+        session_date = format_date(self.transcript.session_date, "d MMMM yyyy")
         session_head.text = Resources.SessionHeading.format(session_date)
+
+
+class SessionHeadingBuilder(DebateSectionBuilder):
+    """Builds the session heading."""
+
+    def build_session_heading(self):
+        """Build the session heading."""
+        session_title = self.transcript.session_title
+        if session_title is None:
+            return
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, "editorial")
+        note.text = session_title
+        super().save_xml()
