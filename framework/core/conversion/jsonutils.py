@@ -67,6 +67,14 @@ class SessionTranscript:
             return None
         return end['end_mark']
 
+    @property
+    def chairman(self) -> str:
+        """Get the session chairman."""
+        start = self.__json['start']
+        if start is None:
+            return None
+        return start['chairmen']
+
 
 def load_json(file_name: str) -> dict:
     """Load  the JSON file.

@@ -253,7 +253,7 @@ class SessionSummaryBuilder(DebateSectionBuilder):
         if len(self.transcript.summary) > 0:
             self.__build_table_of_contents()
 
-        super().save_xml()
+        self.save_xml()
 
     def __build_table_of_contents(self):
         """Build the table of contents using summary elements."""
@@ -290,7 +290,7 @@ class SessionHeadingBuilder(DebateSectionBuilder):
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "editorial")
         note.text = session_title
-        super().save_xml()
+        self.save_xml()
 
 
 class SessionStartEndTimeBuilder(DebateSectionBuilder):
@@ -305,7 +305,7 @@ class SessionStartEndTimeBuilder(DebateSectionBuilder):
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "time")
         note.text = start_time
-        super().save_xml()
+        self.save_xml()
 
     def build_session_end_time(self):
         """Build session end time note."""
@@ -316,4 +316,19 @@ class SessionStartEndTimeBuilder(DebateSectionBuilder):
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "time")
         note.text = end_time
-        super().save_xml()
+        self.save_xml()
+
+
+class SessionChairmenBuilder(DebateSectionBuilder):
+    """Builds the node containing info about the chairmen of the session."""
+
+    def build_session_chairmen(self):
+        """Build the node containing session chairmen."""
+        chairman = self.transcript.chairman
+        if chairman is None:
+            return
+
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, "chairman")
+        note.text = chairman
+        self.save_xml()
