@@ -1,7 +1,7 @@
 """Utility components for JSON files."""
 import json
 import datetime
-from typing import Iterable
+from typing import List
 
 
 class SessionTranscript:
@@ -74,6 +74,11 @@ class SessionTranscript:
         if start is None:
             return None
         return start['chairmen']
+
+    @property
+    def body(self) -> List[BodySegment]:
+        """Get the session body from the transcript."""
+        return [BodySegment(segment) for segment in self.__json['sections']]
 
 
 def load_json(file_name: str) -> dict:
@@ -148,7 +153,7 @@ class SummarySegment:
         return int(self.__segment['number'])
 
     @property
-    def contents(self) -> Iterable[SummaryContentLine]:
+    def contents(self) -> List[SummaryContentLine]:
         """Get the contents of the summary segment.
 
         Returns
@@ -157,3 +162,67 @@ class SummarySegment:
             The contents of the session summary segment.
         """
         return [SummaryContentLine(c) for c in self.__segment['contents']]
+
+
+class Speaker:
+    """Encapsulates speaker information."""
+
+    def __init__(self, speaker: dict):
+        """Create a new instance of the class."""
+        self.__speaker = speaker if speaker is not None else {
+            "text": None,
+            "full_name": None,
+            "profile_url": None,
+            "sex": None,
+            "annotation": None
+        }
+
+    @property
+    def full_name(self) -> str:
+        """Get the full name of the speaker."""
+        return self.__speaker['full_name']
+
+    @property
+    def announcement(self) -> str:
+        """Get the text which announces the speaker."""
+        return self.__speaker['text']
+
+
+class SessionContentLine:
+    """Encapsulates a content line from the session transcript."""
+
+    def __init__(self, content_line):
+        """Create a new instance of the class."""
+        self.__content = content_line if content_line is not None else {
+            'text': None,
+            'annotations': []
+        }
+
+    @property
+    def text(self) -> str:
+        """Get the text of the content line."""
+        return self.__content['text']
+
+    def annotations(self) -> List[str]:
+        """Get the annotations of the content line."""
+        return self.__content['annotations']
+
+
+class BodySegment:
+    """Encapsulates a segment of the session body."""
+
+    def __init__(self, segment):
+        """Create a new instance of the class."""
+        self.__segment = segment
+
+    @property
+    def speaker(self) -> Speaker:
+        """Get the speaker of the segment."""
+        return Speaker(self.__segment['speaker'])
+
+    @property
+    def contents(self) -> List[SessionContentLine]:
+        """Get the contents of the segment."""
+        return [
+            SessionContentLine(line) for line in self.__segment['contents']
+        ]
