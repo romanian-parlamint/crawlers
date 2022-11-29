@@ -11,6 +11,7 @@ from .xmlcreation import SessionSummaryBuilder
 from .xmlcreation import SessionHeadingBuilder
 from .xmlcreation import SessionStartEndTimeBuilder
 from .xmlcreation import SessionChairmenBuilder
+from .xmlcreation import SessionBodyBuilder
 
 
 class SessionTranscriptConverter:
@@ -48,7 +49,19 @@ class SessionTranscriptConverter:
         self.__build_session_heading(session_transcript)
         self.__build_session_start_time(session_transcript)
         self.__build_session_chairmen(session_transcript)
+        self.__build_session_body(session_transcript)
         self.__build_session_end_time(session_transcript)
+
+    def __build_session_body(self, session_transcript: SessionTranscript):
+        """Build the session body.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        """
+        builder = SessionBodyBuilder(session_transcript, self.__output_file)
+        builder.build_session_body()
 
     def __build_session_chairmen(self, session_transcript: SessionTranscript):
         """Build the node containing the information about the session chairmen.

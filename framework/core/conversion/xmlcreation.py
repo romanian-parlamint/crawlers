@@ -1,7 +1,10 @@
 """Module responsible for creating XML elements."""
 from babel.dates import format_date
 from lxml import etree
+from typing import List
 from .jsonutils import SessionTranscript
+from .jsonutils import BodySegment
+from .jsonutils import Speaker
 from .xmlutils import load_xml
 from .xmlutils import save_xml
 from .xmlutils import XmlAttributes
@@ -332,3 +335,202 @@ class SessionChairmenBuilder(DebateSectionBuilder):
         note.set(XmlAttributes.element_type, "chairman")
         note.text = chairman
         self.save_xml()
+
+
+class SessionElementsIdBuilder:
+    """Builds the xml:id attribute for session elements.""" ""
+
+    def __init__(self, xml_root: etree.Element):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        xml_root: etree.Element, required
+            The root element of the session XML.
+        """ ""
+        self.__session_id = xml_root.get(XmlAttributes.xml_id)
+        self.__utterance_id = 0
+        self.__segment_id = 0
+
+    def get_utterance_id(self) -> str:
+        """Get the next id of an 'u' element.
+
+        Returns
+        -------
+        utterance_id: str
+            The id of the utterance element.
+        """
+        self.__utterance_id += 1
+        self.__segment_id = 0
+        return "{session}.u{utterance}".format(session=self.__session_id,
+                                               utterance=self.__utterance_id)
+
+    def get_segment_id(self) -> str:
+        """Get the id of a 'seg' element.
+
+        Returns
+        -------
+        segment_id: str
+            The id of the segment element.
+        """ ""
+        self.__segment_id += 1
+        return "{session}.u{utterance}.seg{segment}".format(
+            session=self.__session_id,
+            utterance=self.__utterance_id,
+            segment=self.__segment_id)
+
+
+class SessionBodyBuilder(DebateSectionBuilder):
+    """Builds the nodes containing the session body."""
+
+    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        """
+        super().__init__(session_transcript, xml_file)
+        self.__id_builder = SessionElementsIdBuilder(self.xml)
+
+    def build_session_body(self):
+        """Build the session body."""
+        session_segments = self.transcript.body
+        if len(session_segments) == 0:
+            return
+
+        chairman = self.__get_speaker(session_segments, 0)
+        chairman_name = self.__get_speaker_name(chairman)
+        for idx, segment in enumerate(session_segments):
+            if segment.is_empty:
+                continue
+
+            speaker = self.__get_speaker(session_segments, idx)
+            speaker_name = self.__get_speaker_name(speaker)
+
+            self.__build_speaker_note(speaker.announcement)
+            utterance = self.__build_utterance(speaker_name, chairman_name)
+            for content_line in segment.contents:
+                if content_line.is_empty:
+                    continue
+                self.__build_segment(utterance, content_line.text)
+
+            # TODO: Add editorial/gap elements if present
+            # TODO: Map speaker name from the file
+        self.save_xml()
+
+    def __build_segment(self, utterance: etree.Element, text: str):
+        """Build a segment element and add it to the parent utterance element.
+
+        Parameters
+        ----------
+        utterance: etree.Element, required
+            The parent utterance element.
+        text: str, required
+            The text of the segment.
+        """ ""
+        seg = etree.SubElement(utterance, XmlElements.seg)
+        seg.set(XmlAttributes.xml_id, self.__id_builder.get_segment_id())
+        seg.text = text
+
+    def __build_utterance(self, speaker_name: str, chairman_name: str):
+        """Build an utterance element and add it to the debate section.
+
+        Parameters
+        ----------
+        speaker_name: str, required
+            The name of the speaker.
+        chairman_name: str, required
+            The name of the session chairman.
+
+        Returns
+        -------
+        utterance: etree.Element
+            The utterance element.
+        """
+        utterance = etree.SubElement(self.debate_section, XmlElements.u)
+        speaker_type = "#chair" if speaker_name == chairman_name else "#regular"
+        utterance.set(XmlAttributes.ana, speaker_type)
+        # TODO: Build speaker id
+        utterance.set(XmlAttributes.who, speaker_name)
+        utterance.set(XmlAttributes.xml_id,
+                      self.__id_builder.get_utterance_id())
+        return utterance
+
+    def __build_speaker_note(self, text: str):
+        """Build a speaker note element and add it to the debate section.
+
+        Parameters
+        ----------
+        text: str, required
+            The text of the note.
+        """
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, "speaker")
+        note.text = text
+
+    def __get_speaker(self, session_segments: List[BodySegment],
+                      segment_index: int) -> Speaker:
+        """Get the speaker for the segment at the specified index.
+
+        Parameters
+        ----------
+        session_segments: list of BodySegment, required
+            The session segments.
+        segment_index: int, required
+            The index of the segment for which to determine the speaker.
+
+        Returns
+        -------
+        speaker: Speaker
+            The speaker associated with the current segment.
+        """
+        # Iterate backwards from the current index until the first speaker that is not None
+        while (segment_index >= 0):
+            segment = session_segments[segment_index]
+            speaker = segment.speaker
+            if (speaker is not None) and (not speaker.is_empty):
+                return speaker
+            segment_index = segment_index - 1
+
+        raise ValueError("Could not determine speaker.")
+
+    def __get_session_chairman(self,
+                               session_segments: List[BodySegment]) -> Speaker:
+        """Get the chairman of the session from session segments.
+
+        Parameters
+        ----------
+        session_segments: list of BodySegment, required
+            The session segments.
+
+        Returns
+        -------
+        chairman_name: Speaker
+            The session chairman.
+        """
+        # The chairman is the first speaker of the session
+        for segment in session_segments:
+            if segment.speaker is not None:
+                return segment.speaker
+        raise ValueError("Could not determine the chairman of the session.")
+
+    def __get_speaker_name(self, speaker: Speaker) -> str:
+        """Get the speaker name from the provided segment.
+
+        Parameters
+        ----------
+        speaker: Speaker, required
+            The speaker of the session segment.
+
+        Returns
+        -------
+        speaker_name: str
+            The name of the speaker if found; None otherwise.
+        """
+        if speaker is None:
+            return None
+        return speaker.full_name

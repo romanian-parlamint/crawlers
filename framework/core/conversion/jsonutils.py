@@ -76,7 +76,7 @@ class SessionTranscript:
         return start['chairmen']
 
     @property
-    def body(self) -> List[BodySegment]:
+    def body(self):
         """Get the session body from the transcript."""
         return [BodySegment(segment) for segment in self.__json['sections']]
 
@@ -176,6 +176,7 @@ class Speaker:
             "sex": None,
             "annotation": None
         }
+        self.__is_empty = True if speaker is None else False
 
     @property
     def full_name(self) -> str:
@@ -186,6 +187,11 @@ class Speaker:
     def announcement(self) -> str:
         """Get the text which announces the speaker."""
         return self.__speaker['text']
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if the speaker is empty; otherwise False."""
+        return self.__is_empty
 
 
 class SessionContentLine:
@@ -203,9 +209,16 @@ class SessionContentLine:
         """Get the text of the content line."""
         return self.__content['text']
 
+    @property
     def annotations(self) -> List[str]:
         """Get the annotations of the content line."""
         return self.__content['annotations']
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if content line is empty; otherwise False."""
+        no_text = self.text is None or len(self.text) == 0
+        return no_text and len(self.annotations) == 0
 
 
 class BodySegment:
@@ -226,3 +239,9 @@ class BodySegment:
         return [
             SessionContentLine(line) for line in self.__segment['contents']
         ]
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if the current segment is empty; otherwise False."""
+        return self.__segment['speaker'] is None and len(
+            self.__segment['contents']) == 0
