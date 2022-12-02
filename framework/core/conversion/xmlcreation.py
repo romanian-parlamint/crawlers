@@ -1,4 +1,5 @@
 """Module responsible for creating XML elements."""
+import re
 from babel.dates import format_date
 from lxml import etree
 from typing import List
@@ -381,6 +382,43 @@ class SessionElementsIdBuilder:
             segment=self.__segment_id)
 
 
+class SpeakerIdBuilder:
+    """Builds the speaker id from speaker name."""
+
+    def __init__(self, name_map: Dict[str, str]):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        name_map: dict of (str, str), required
+            The map of speaker names.
+        """
+        self.__name_map = name_map
+        self.__translations = str.maketrans({'Ț': 'Tz', 'ț': 'tz', ' ': '-'})
+
+    def build_speaker_id(self, speaker_name: str) -> str:
+        """Build speaker id from speaker name.
+
+        Parameters
+        ----------
+        speaker_name: str, required
+            The speaker name.
+
+        Returns
+        -------
+        speaker_id: str
+            The id of the speaker.
+        """
+        speaker_name = speaker_name.strip()
+        correct_name = speaker_name
+        if speaker_name in self.__name_map:
+            correct_name = self.__name_map[speaker_name]
+
+        canonical_id = correct_name.translate(self.__translations)
+        canonical_id = re.sub(r"-{2,}", '-', canonical_id)
+        return "#{}".format(canonical_id)
+
+
 class SessionBodyBuilder(DebateSectionBuilder):
     """Builds the nodes containing the session body."""
 
@@ -397,7 +435,8 @@ class SessionBodyBuilder(DebateSectionBuilder):
         """
         super().__init__(session_transcript, xml_file)
         self.__name_map = speaker_name_map
-        self.__id_builder = SessionElementsIdBuilder(self.xml)
+        self.__element_id_builder = SessionElementsIdBuilder(self.xml)
+        self.__speaker_id_builder = SpeakerIdBuilder(self.__name_map)
 
     def build_session_body(self):
         """Build the session body."""
@@ -422,7 +461,6 @@ class SessionBodyBuilder(DebateSectionBuilder):
                 self.__build_segment(utterance, content_line.text)
 
             # TODO: Add editorial/gap elements if present
-            # TODO: Map speaker name from the file
         self.save_xml()
 
     def __build_segment(self, utterance: etree.Element, text: str):
@@ -436,7 +474,8 @@ class SessionBodyBuilder(DebateSectionBuilder):
             The text of the segment.
         """ ""
         seg = etree.SubElement(utterance, XmlElements.seg)
-        seg.set(XmlAttributes.xml_id, self.__id_builder.get_segment_id())
+        seg.set(XmlAttributes.xml_id,
+                self.__element_id_builder.get_segment_id())
         seg.text = text
 
     def __build_utterance(self, speaker_name: str, chairman_name: str):
@@ -457,10 +496,10 @@ class SessionBodyBuilder(DebateSectionBuilder):
         utterance = etree.SubElement(self.debate_section, XmlElements.u)
         speaker_type = "#chair" if speaker_name == chairman_name else "#regular"
         utterance.set(XmlAttributes.ana, speaker_type)
-        # TODO: Build speaker id
-        utterance.set(XmlAttributes.who, speaker_name)
+        speaker_id = self.__speaker_id_builder.build_speaker_id(speaker_name)
+        utterance.set(XmlAttributes.who, speaker_id)
         utterance.set(XmlAttributes.xml_id,
-                      self.__id_builder.get_utterance_id())
+                      self.__element_id_builder.get_utterance_id())
         return utterance
 
     def __build_speaker_note(self, text: str):
