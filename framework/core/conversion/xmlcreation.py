@@ -2,6 +2,7 @@
 from babel.dates import format_date
 from lxml import etree
 from typing import List
+from typing import Dict
 from .jsonutils import SessionTranscript
 from .jsonutils import BodySegment
 from .jsonutils import Speaker
@@ -383,7 +384,8 @@ class SessionElementsIdBuilder:
 class SessionBodyBuilder(DebateSectionBuilder):
     """Builds the nodes containing the session body."""
 
-    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+    def __init__(self, session_transcript: SessionTranscript,
+                 speaker_name_map: Dict[str, str], xml_file: str):
         """Create a new instance of the class.
 
         Parameters
@@ -394,6 +396,7 @@ class SessionBodyBuilder(DebateSectionBuilder):
             The file containing session transcript in XML format.
         """
         super().__init__(session_transcript, xml_file)
+        self.__name_map = speaker_name_map
         self.__id_builder = SessionElementsIdBuilder(self.xml)
 
     def build_session_body(self):
@@ -533,4 +536,8 @@ class SessionBodyBuilder(DebateSectionBuilder):
         """
         if speaker is None:
             return None
+
+        if speaker.full_name in self.__name_map:
+            return self.__name_map[speaker.full_name]
+
         return speaker.full_name

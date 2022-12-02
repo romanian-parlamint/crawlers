@@ -40,6 +40,7 @@ def main(args):
         total = total + 1
         try:
             converter = SessionTranscriptConverter(f, args.session_template,
+                                                   name_map,
                                                    args.output_directory)
             converter.covert()
             processed = processed + 1

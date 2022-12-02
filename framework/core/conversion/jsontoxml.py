@@ -12,13 +12,14 @@ from .xmlcreation import SessionHeadingBuilder
 from .xmlcreation import SessionStartEndTimeBuilder
 from .xmlcreation import SessionChairmenBuilder
 from .xmlcreation import SessionBodyBuilder
+from typing import Dict
 
 
 class SessionTranscriptConverter:
     """Convert session transcript from JSON to XML."""
 
     def __init__(self, input_file: str, session_template: str,
-                 output_dir: str):
+                 name_map: Dict[str, str], output_dir: str):
         """Create a new instance of the class.
 
         Parameters
@@ -27,11 +28,14 @@ class SessionTranscriptConverter:
             The path of the session transcript in JSON format.
         session_template: str, required
             The path of the XML file containing session template.
+        name_map: dict, required
+            The map of speaker names to their correct names.
         output_dir: Path, required
             The path of the output directory.
         """
         self.__input_file = input_file
         self.__session_template = session_template
+        self.__name_map = name_map
         self.__output_file = self.__build_output_file_path(
             input_file, output_dir)
 
@@ -60,7 +64,8 @@ class SessionTranscriptConverter:
         session_transcript: SessionTranscript, required
             The session transcript.
         """
-        builder = SessionBodyBuilder(session_transcript, self.__output_file)
+        builder = SessionBodyBuilder(session_transcript, self.__name_map,
+                                     self.__output_file)
         builder.build_session_body()
 
     def __build_session_chairmen(self, session_transcript: SessionTranscript):
