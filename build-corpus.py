@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Generator
 from framework.utils.loggingutils import configure_logging
 from framework.core.conversion.jsontoxml import SessionTranscriptConverter
+import pandas as pd
 
 
 def iter_files(directory: str) -> Generator[Path, None, None]:
@@ -31,6 +32,8 @@ def main(args):
     """Entry point of the module."""
     output_dir = Path(args.output_directory)
     output_dir.mkdir(exist_ok=True, parents=True)
+    df = pd.read_csv(args.speaker_name_map)
+    name_map = {row.name.lower(): row.correct_name for row in df.itertuples()}
 
     total, processed, failed = 0, 0, 0
     for f in iter_files(args.input_directory):
@@ -67,6 +70,11 @@ def parse_arguments() -> Namespace:
     parser.add_argument('--session-template',
                         help="The path of the session template file.",
                         default='data/templates/session-template.xml')
+    parser.add_argument(
+        '--speaker-name-map',
+        help="The path of the CSV file mapping speaker names to correct names.",
+        type=str,
+        default='data/speakers/speaker-name-map.csv')
     parser.add_argument('-o',
                         '--output-directory',
                         help="The directory where to save corpus files.",
