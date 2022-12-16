@@ -28,6 +28,28 @@ def iter_files(directory: str) -> Generator[Path, None, None]:
         break
 
 
+def build_output_file_path(input_file: str, output_dir: str) -> str:
+    """Build the path of the output file.
+
+    Parameters
+    ----------
+    input_file: str, required
+        The path of the session transcript in JSON format.
+    output_dir: Path, required
+        The path of the output directory.
+
+    Returns
+    -------
+    output_file: str
+        The path of the output file.
+    """
+    output_dir = Path(output_dir)
+    input_file = Path(input_file)
+    file_path = Path('ParlaMint-RO-{}.xml'.format(input_file.stem))
+    output_file = output_dir / file_path
+    return str(output_file)
+
+
 def main(args):
     """Entry point of the module."""
     output_dir = Path(args.output_directory)
@@ -35,17 +57,21 @@ def main(args):
     df = pd.read_csv(args.speaker_name_map)
     name_map = {row.name.lower(): row.correct_name for row in df.itertuples()}
 
+    # TODO: Initialize corpus root builder
     total, processed, failed = 0, 0, 0
     for f in iter_files(args.input_directory):
         total = total + 1
         try:
+            # TODO: Build the output file path
+            output_file = build_output_file_path(f, args.output_directory)
             converter = SessionTranscriptConverter(f, args.session_template,
-                                                   name_map,
-                                                   args.output_directory)
+                                                   name_map, output_file)
             converter.covert()
+            # TODO: Add the output file to corpus root
             processed = processed + 1
         except Exception as e:
             failed = failed + 1
+            # TODO: Check if output file exists and delete it
             logging.exception(
                 "Failed to build session XML from %s. Exception: %r", f, e)
 
