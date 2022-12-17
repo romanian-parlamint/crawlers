@@ -1,6 +1,5 @@
 """Module responsible for conversion from JSON to  XML."""
 import logging
-from pathlib import Path
 from .jsonutils import SessionTranscript
 from .xmlcreation import SessionIdBuilder
 from .xmlcreation import SessionTitleBuilder

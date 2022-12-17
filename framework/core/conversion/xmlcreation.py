@@ -432,6 +432,8 @@ class SessionBodyBuilder(DebateSectionBuilder):
             The session transcript.
         xml_file: str, required
             The file containing session transcript in XML format.
+        speaker_name_map: dict of (str, str), required
+            The dictionary mapping speaker names from documents to their actual names.
         """
         super().__init__(session_transcript, xml_file)
         self.__name_map = speaker_name_map
@@ -580,3 +582,35 @@ class SessionBodyBuilder(DebateSectionBuilder):
             return self.__name_map[speaker.full_name]
 
         return speaker.full_name
+
+
+class RootCorpusFileBuilder:
+    """Builds the root file of the corpus."""
+
+    def __init__(self, file_path: str, template_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        file_path: str, required
+            The path of the corpus root file.
+        template_file: str, required
+            The path of the corpus root template file.
+        """
+        self.__file_path = file_path
+        self.__xml_root = load_xml(template_file)
+
+    def add_corpus_file(self, corpus_file: str):
+        """Add the specified file to the corpus root file.
+
+        Parameters
+        ----------
+        corpus_file: str, required
+            The path of the file to add to the corpus.
+        """
+        etree.register_namespace("xsi", "http://www.w3.org/2001/XInclude")
+        qname = etree.QName("http://www.w3.org/2001/XInclude", "include")
+        include_element = etree.Element(qname)
+        include_element.set("href", corpus_file)
+        self.__xml_root.getroot().append(include_element)
+        save_xml(self.__xml_root, self.__file_path)

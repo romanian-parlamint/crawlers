@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Generator
 from framework.utils.loggingutils import configure_logging
 from framework.core.conversion.jsontoxml import SessionTranscriptConverter
+from framework.core.conversion.xmlcreation import RootCorpusFileBuilder
 import pandas as pd
 
 
@@ -57,21 +58,24 @@ def main(args):
     df = pd.read_csv(args.speaker_name_map)
     name_map = {row.name.lower(): row.correct_name for row in df.itertuples()}
 
-    # TODO: Initialize corpus root builder
+    root_file_path = str(output_dir / Path("ParlaMint-RO.xml"))
+    root_builder = RootCorpusFileBuilder(root_file_path,
+                                         args.corpus_root_template)
     total, processed, failed = 0, 0, 0
     for f in iter_files(args.input_directory):
         total = total + 1
         try:
-            # TODO: Build the output file path
-            output_file = build_output_file_path(f, args.output_directory)
+            output_file = build_output_file_path(f, str(output_dir))
             converter = SessionTranscriptConverter(f, args.session_template,
                                                    name_map, output_file)
             converter.covert()
-            # TODO: Add the output file to corpus root
+            root_builder.add_corpus_file(output_file)
             processed = processed + 1
         except Exception as e:
             failed = failed + 1
-            # TODO: Check if output file exists and delete it
+            faulty_file = Path(output_file)
+            if faulty_file.exists():
+                faulty_file.unlink()
             logging.exception(
                 "Failed to build session XML from %s. Exception: %r", f, e)
 
@@ -97,6 +101,9 @@ def parse_arguments() -> Namespace:
     parser.add_argument('--session-template',
                         help="The path of the session template file.",
                         default='data/templates/session-template.xml')
+    parser.add_argument('--corpus-root-template',
+                        help="The path of the corpus root template.",
+                        default='data/templates/corpus-root-template.xml')
     parser.add_argument(
         '--speaker-name-map',
         help="The path of the CSV file mapping speaker names to correct names.",
