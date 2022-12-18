@@ -4,6 +4,7 @@ from babel.dates import format_date
 from lxml import etree
 from typing import List
 from typing import Dict
+from typing import Callable
 from .jsonutils import SessionTranscript
 from .jsonutils import BodySegment
 from .jsonutils import Speaker
@@ -582,6 +583,121 @@ class SessionBodyBuilder(DebateSectionBuilder):
             return self.__name_map[speaker.full_name]
 
         return speaker.full_name
+
+
+class SessionStatsAggregator:
+    """Update the values for tags containing session statistics."""
+
+    def __init__(self, xml_file: str, word_tokenizer: Callable[[str],
+                                                               List[str]]):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        word_tokenizer: callback, required
+            A callback function that accepts a string as input, tokenizes it and returns a list of tokens.
+        """
+        self.__xml_file = xml_file
+        self.__xml_tree = load_xml(self.__xml_file)
+        self.__tokenizer = word_tokenizer
+
+    @property
+    def xml_root(self):
+        """Get the root node of the root corpus file."""
+        return self.__xml_tree.getroot()
+
+    def update_statistics(self):
+        """Update the tagUsage elements."""
+        self.__set_session_stats()
+        self.__set_tag_usage()
+        save_xml(self.__xml_tree, self.__xml_file)
+
+    def __set_tag_usage(self):
+        """Update the values for tagUsage elements."""
+        name_map = {
+            "text": XmlElements.text,
+            "body": XmlElements.body,
+            "div": XmlElements.div,
+            "head": XmlElements.head,
+            "note": XmlElements.note,
+            "u": XmlElements.u,
+            "seg": XmlElements.seg,
+            "kinesic": XmlElements.kinesic,
+            "desc": XmlElements.desc,
+            "gap": XmlElements.gap
+        }
+        for tag_usage in self.xml_root.iterdescendants(
+                tag=XmlElements.tagUsage):
+            tag_name = name_map[tag_usage.get(XmlAttributes.gi)]
+            num_occurences = self.__get_num_occurences(tag_name)
+            tag_usage.set(XmlAttributes.occurs, str(num_occurences))
+
+    def __get_num_occurences(self, tag: str) -> int:
+        """Compute the number of occurences for the specified tag.
+
+        Parameters
+        ----------
+        tag: str
+            The tag for which to compute number of occurences.
+
+        Returns
+        -------
+        num_occurences: int
+            The number of times the tag is present in the document.
+        """
+        tags = self.xml_root.iterdescendants(tag=tag)
+        num_occurences = len([t for t in tags])
+        return num_occurences
+
+    def __set_session_stats(self):
+        """Set the values of the session statistics elements."""
+        num_speeches = self.__get_num_speeches()
+        num_words = self.__get_num_words()
+        for m in self.xml_root.iterdescendants(tag=XmlElements.measure):
+            if m.getparent().tag != XmlElements.extent:
+                continue
+            lang = m.get(XmlAttributes.lang)
+            unit = m.get(XmlAttributes.unit)
+
+            qty = num_speeches if unit == 'speeches' else num_words
+            m.set(XmlAttributes.quantity, str(qty))
+            if unit == 'speeches':
+                txt = Resources.NumSpeechesRo if lang == 'ro' else Resources.NumSpeechesEn
+            else:
+                txt = Resources.NumWordsRo if lang == 'ro' else Resources.NumWordsEn
+            m.text = txt.format(qty)
+
+    def __get_num_words(self) -> int:
+        """Compute the number of words from the session transcription.
+
+        Returns
+        -------
+        num_words: int
+            The number of words in the transcription.
+        """
+        debate_section = None
+        for div in self.xml_root.iterdescendants(XmlElements.div):
+            if div.get(XmlAttributes.element_type) == "debateSection":
+                debate_section = div
+        text = "".join(debate_section.itertext())
+        num_words = len(self.__tokenizer(text))
+        return num_words
+
+    def __get_num_speeches(self) -> int:
+        """Compute the number of utterances.
+
+        Returns
+        -------
+        num_speeches: int
+            The number of speeches in the transcription.
+        """
+        speeches = [
+            s for s in self.xml_root.iterdescendants(tag=XmlElements.u)
+        ]
+        num_speeches = len(speeches)
+        return num_speeches
 
 
 class RootCorpusFileBuilder:

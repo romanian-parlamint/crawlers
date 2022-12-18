@@ -87,6 +87,10 @@ class Resources:
     Heading = "ROMÂNIA CAMERA DEPUTAȚILOR"
     SessionHeading = "Ședinta Camerei Deputaților din {}"
     ToC = "SUMAR"
+    NumSpeechesRo = "{} discursuri"
+    NumSpeechesEn = "{} speeches"
+    NumWordsRo = "{} cuvinte"
+    NumWordsEn = "{} words"
 
 
 def load_xml(file_name):

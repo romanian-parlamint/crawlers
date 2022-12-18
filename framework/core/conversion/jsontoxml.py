@@ -11,7 +11,11 @@ from .xmlcreation import SessionHeadingBuilder
 from .xmlcreation import SessionStartEndTimeBuilder
 from .xmlcreation import SessionChairmenBuilder
 from .xmlcreation import SessionBodyBuilder
+from .xmlcreation import SessionStatsAggregator
 from typing import Dict
+import spacy
+
+nlp_pipeline = spacy.load('ro_core_news_lg')
 
 
 class SessionTranscriptConverter:
@@ -53,6 +57,19 @@ class SessionTranscriptConverter:
         self.__build_session_chairmen(session_transcript)
         self.__build_session_body(session_transcript)
         self.__build_session_end_time(session_transcript)
+        self.__update_session_stats(self.__output_file)
+
+    def __update_session_stats(self, output_file: str):
+        """Update the nodes containing session statistics.
+
+        Parameters
+        ----------
+        output_file: str, required
+            The path of the output XML file.
+        """
+        aggregator = SessionStatsAggregator(output_file,
+                                            nlp_pipeline.tokenizer)
+        aggregator.update_statistics()
 
     def __build_session_body(self, session_transcript: SessionTranscript):
         """Build the session body.
