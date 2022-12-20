@@ -127,3 +127,35 @@ def save_xml(xml: etree._ElementTree, file_name: str):
               pretty_print=True,
               encoding='utf-8',
               xml_declaration=True)
+
+
+class XmlDataManipulator:
+    """Provide basic abstractions for manipulating a XML file."""
+
+    def __init__(self, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        xml_file: str, required
+            The path of the XML file.
+        """
+        self.__xml_file = xml_file
+        self.__xml_tree = load_xml(xml_file)
+
+    @property
+    def xml_root(self):
+        """Get the root node of the XML tree."""
+        return self.__xml_tree.getroot()
+
+    def save_changes(self, output_file: str = None):
+        """Save the changes made to the XML tree.
+
+        Parameters
+        ----------
+        output_file: str, optional
+            The file where to save the changes.
+            If `None` then changes will be saved to the input file.
+        """
+        xml_file = output_file if output_file is not None else self.__xml_file
+        save_xml(self.__xml_tree, xml_file)
