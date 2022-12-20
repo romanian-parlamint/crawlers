@@ -197,8 +197,7 @@ class SessionTranscriptConverter:
         session_transcript: SessionTranscript, required
             The session transcript.
         """
-        session_id_builder = SessionIdBuilder(self.__input_file,
-                                              self.__session_template,
+        session_id_builder = SessionIdBuilder(self.__session_template,
                                               session_transcript,
                                               self.__output_file)
         session_id_builder.build_session_id()

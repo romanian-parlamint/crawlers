@@ -4,49 +4,67 @@ from babel.dates import format_date
 from lxml import etree
 from typing import List
 from typing import Dict
-from typing import Callable
 from .jsonutils import SessionTranscript
 from .jsonutils import BodySegment
 from .jsonutils import Speaker
 from .xmlutils import load_xml
 from .xmlutils import save_xml
+from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlAttributes
 from .xmlutils import XmlElements
 from .xmlutils import Resources
 
 
-class SessionIdBuilder:
+class SessionIdBuilder(XmlDataManipulator):
     """Builds the session id."""
 
-    def __init__(self, input_file: str, template_file: str,
-                 transcript: SessionTranscript, output_file: str):
+    def __init__(self, template_file: str, transcript: SessionTranscript,
+                 output_file: str):
         """Create a new instance of the class.
 
         Parameters
         ----------
-        input_file: str, required
-            The path of the JSON file containing session transcript.
         template_file: str, required
             The path of the session template file.
         transcript: SessionTranscript, required
         output_file, str, required
             The path of the output XML file.
         """
-        self.__input_file = input_file
-        self.__template_file = template_file
+        XmlDataManipulator.__init__(self, template_file)
         self.__transcript = transcript
         self.__output_file = output_file
 
     def build_session_id(self):
         """Build session id and save file."""
-        xml_root = load_xml(self.__template_file)
         xml_id = "ParlaMint-RO-{}-{}".format(self.__transcript.session_date,
                                              self.__transcript.session_id)
-        xml_root.getroot().set(XmlAttributes.xml_id, xml_id)
-        save_xml(xml_root, self.__output_file)
+        self.xml_root.set(XmlAttributes.xml_id, xml_id)
+        self.save_changes(self.__output_file)
 
 
-class SessionTitleBuilder:
+class JsonTranscriptToXmlConverter(XmlDataManipulator):
+    """Base class for converting JSON transcript to XML.""" ""
+
+    def __init__(self, session_transcript: SessionTranscript, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        session_transcript: SessionTranscript, required
+            The session transcript.
+        xml_file: str, required
+            The file containing session transcript in XML format.
+        """
+        XmlDataManipulator.__init__(self, xml_file)
+        self.__transcript = session_transcript
+
+    @property
+    def session_transcript(self) -> SessionTranscript:
+        """Get the session transcript.""" ""
+        return self.__transcript
+
+
+class SessionTitleBuilder(JsonTranscriptToXmlConverter):
     """Builds the session title."""
 
     def __init__(self, session_transcript: SessionTranscript, xml_file: str):
@@ -59,22 +77,16 @@ class SessionTitleBuilder:
         xml_file: str, required
             The file containing session transcript in XML format.
         """
-        self.__transcript = session_transcript
-        self.__xml_file = xml_file
-        self.__xml_root = load_xml(xml_file)
-
-    @property
-    def xml(self):
-        """Get the root node of the XML."""
-        return self.__xml_root.getroot()
+        JsonTranscriptToXmlConverter.__init__(self, session_transcript,
+                                              xml_file)
 
     def build_session_title(self):
         """Build session title."""
-        session_date = self.__transcript.session_date
+        session_date = self.session_transcript.session_date
         ro_date = format_date(session_date, "d MMMM yyyy", locale="ro")
         en_date = format_date(session_date, "MMMM d yyyy", locale="en")
 
-        for elem in self.xml.iterdescendants(tag=XmlElements.title):
+        for elem in self.xml_root.iterdescendants(tag=XmlElements.title):
             if elem.getparent().tag != XmlElements.titleStmt:
                 continue
 
@@ -92,10 +104,10 @@ class SessionTitleBuilder:
             if title_type == 'sub' and lang == 'en':
                 elem.text = Resources.SessionSubtitleEn.format(en_date)
 
-        save_xml(self.__xml_root, self.__xml_file)
+        self.save_changes()
 
 
-class MeetingElementContentsBuilder:
+class MeetingElementContentsBuilder(JsonTranscriptToXmlConverter):
     """Builds the contents of the meeting elements."""
 
     def __init__(self, session_transcript: SessionTranscript, xml_file: str):
@@ -108,27 +120,21 @@ class MeetingElementContentsBuilder:
         xml_file: str, required
             The file containing session transcript in XML format.
         """
-        self.__transcript = session_transcript
-        self.__xml_file = xml_file
-        self.__xml_root = load_xml(xml_file)
-
-    @property
-    def xml(self):
-        """Get the root node of the XML."""
-        return self.__xml_root.getroot()
+        JsonTranscriptToXmlConverter.__init__(self, session_transcript,
+                                              xml_file)
 
     def build_meeting_info(self):
         """Build meeting element contents."""
-        session_date = self.__transcript.session_date
+        session_date = self.session_transcript.session_date
         meeting_n = format_date(session_date, "yyyyMMdd")
 
-        for meeting in self.xml.iterdescendants(tag=XmlElements.meeting):
+        for meeting in self.xml_root.iterdescendants(tag=XmlElements.meeting):
             meeting.set(XmlAttributes.meeting_n, meeting_n)
 
-        save_xml(self.__xml_root, self.__xml_file)
+        self.save_changes()
 
 
-class SessionIdNoBuilder:
+class SessionIdNoBuilder(JsonTranscriptToXmlConverter):
     """Builds the idno element."""
 
     def __init__(self, session_transcript: SessionTranscript, xml_file: str):
@@ -141,24 +147,19 @@ class SessionIdNoBuilder:
         xml_file: str, required
             The file containing session transcript in XML format.
         """
-        self.__transcript = session_transcript
-        self.__xml_file = xml_file
-        self.__xml_root = load_xml(xml_file)
-
-    @property
-    def xml(self):
-        """Get the root node of the XML."""
-        return self.__xml_root.getroot()
+        JsonTranscriptToXmlConverter.__init__(self, session_transcript,
+                                              xml_file)
 
     def build_session_idno(self):
         """Build the contents of the idno element."""
-        for idno in self.xml.iterdescendants(tag=XmlElements.idno):
+        for idno in self.xml_root.iterdescendants(tag=XmlElements.idno):
             if idno.get(XmlAttributes.element_type) == 'URI':
-                idno.text = self.__transcript.transcript_url
-        save_xml(self.__xml_root, self.__xml_file)
+                idno.text = self.session_transcript.transcript_url
+
+        self.save_changes()
 
 
-class SessionDateBuilder:
+class SessionDateBuilder(JsonTranscriptToXmlConverter):
     """Builds the contents of date elements."""
 
     def __init__(self, session_transcript: SessionTranscript, xml_file: str):
@@ -171,29 +172,23 @@ class SessionDateBuilder:
         xml_file: str, required
             The file containing session transcript in XML format.
         """
-        self.__transcript = session_transcript
-        self.__xml_file = xml_file
-        self.__xml_root = load_xml(xml_file)
-
-    @property
-    def xml(self):
-        """Get the root node of the XML."""
-        return self.__xml_root.getroot()
+        JsonTranscriptToXmlConverter.__init__(self, session_transcript,
+                                              xml_file)
 
     def build_date_contents(self):
         """Build the content of date elements."""
-        session_date = self.__transcript.session_date
-        for date in self.xml.iterdescendants(tag=XmlElements.date):
+        session_date = self.session_transcript.session_date
+        for date in self.xml_root.iterdescendants(tag=XmlElements.date):
             parent_tag = date.getparent().tag
             if parent_tag == XmlElements.setting or parent_tag == XmlElements.bibl:
                 date.set(XmlAttributes.when,
                          format_date(session_date, "yyyy-MM-dd"))
                 date.text = format_date(session_date, "dd.MM.yyyy")
 
-        save_xml(self.__xml_root, self.__xml_file)
+        self.save_changes()
 
 
-class DebateSectionBuilder:
+class DebateSectionBuilder(JsonTranscriptToXmlConverter):
     """A builder that works on the debate section."""
 
     def __init__(self, session_transcript: SessionTranscript, xml_file: str):
@@ -206,26 +201,9 @@ class DebateSectionBuilder:
         xml_file: str, required
             The file containing session transcript in XML format.
         """
-        self.__transcript = session_transcript
-        self.__xml_file = xml_file
-        self.__xml_root = load_xml(xml_file)
+        JsonTranscriptToXmlConverter.__init__(self, session_transcript,
+                                              xml_file)
         self.__debate_section = None
-
-    @property
-    def transcript(self) -> SessionTranscript:
-        """Get the session transcript.
-
-        Returns
-        -------
-        transcript: SessionTranscript
-            The session transcript.
-        """
-        return self.__transcript
-
-    @property
-    def xml(self) -> etree.Element:
-        """Get the root node of the XML."""
-        return self.__xml_root.getroot()
 
     @property
     def debate_section(self) -> etree.Element:
@@ -239,14 +217,10 @@ class DebateSectionBuilder:
         if self.__debate_section is not None:
             return self.__debate_section
 
-        for div in self.xml.iterdescendants(XmlElements.div):
+        for div in self.xml_root.iterdescendants(XmlElements.div):
             if div.get(XmlAttributes.element_type) == "debateSection":
                 self.__debate_section = div
                 return self.__debate_section
-
-    def save_xml(self):
-        """Save the xml contents."""
-        save_xml(self.__xml_root, self.__xml_file)
 
 
 class SessionSummaryBuilder(DebateSectionBuilder):
@@ -256,10 +230,10 @@ class SessionSummaryBuilder(DebateSectionBuilder):
         """Build the summary of the session."""
         self.__build_summary_heading()
 
-        if len(self.transcript.summary) > 0:
+        if len(self.session_transcript.summary) > 0:
             self.__build_table_of_contents()
 
-        self.save_xml()
+        self.save_changes()
 
     def __build_table_of_contents(self):
         """Build the table of contents using summary elements."""
@@ -267,7 +241,7 @@ class SessionSummaryBuilder(DebateSectionBuilder):
         note.set(XmlAttributes.element_type, "editorial")
         note.text = Resources.ToC
 
-        for summary_line in self.transcript.summary:
+        for summary_line in self.session_transcript.summary:
             for content in summary_line.contents:
                 note = etree.SubElement(self.debate_section, XmlElements.note)
                 note.set(XmlAttributes.element_type, "summary")
@@ -280,8 +254,8 @@ class SessionSummaryBuilder(DebateSectionBuilder):
 
         session_head = etree.SubElement(self.debate_section, XmlElements.head)
         session_head.set(XmlAttributes.element_type, "session")
-        session_date = self.transcript.session_date
-        session_date = format_date(self.transcript.session_date, "d MMMM yyyy")
+        session_date = self.session_transcript.session_date
+        session_date = format_date(session_date, "d MMMM yyyy")
         session_head.text = Resources.SessionHeading.format(session_date)
 
 
@@ -290,13 +264,13 @@ class SessionHeadingBuilder(DebateSectionBuilder):
 
     def build_session_heading(self):
         """Build the session heading."""
-        session_title = self.transcript.session_title
+        session_title = self.session_transcript.session_title
         if session_title is None:
             return
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "editorial")
         note.text = session_title
-        self.save_xml()
+        self.save_changes()
 
 
 class SessionStartEndTimeBuilder(DebateSectionBuilder):
@@ -304,25 +278,25 @@ class SessionStartEndTimeBuilder(DebateSectionBuilder):
 
     def build_session_start_time(self):
         """Build session start time note."""
-        start_time = self.transcript.start_mark
+        start_time = self.session_transcript.start_mark
         if start_time is None:
             return
 
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "time")
         note.text = start_time
-        self.save_xml()
+        self.save_changes()
 
     def build_session_end_time(self):
         """Build session end time note."""
-        end_time = self.transcript.end_mark
+        end_time = self.session_transcript.end_mark
         if end_time is None:
             return
 
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "time")
         note.text = end_time
-        self.save_xml()
+        self.save_changes()
 
 
 class SessionChairmenBuilder(DebateSectionBuilder):
@@ -330,14 +304,14 @@ class SessionChairmenBuilder(DebateSectionBuilder):
 
     def build_session_chairmen(self):
         """Build the node containing session chairmen."""
-        chairman = self.transcript.chairman
+        chairman = self.session_transcript.chairman
         if chairman is None:
             return
 
         note = etree.SubElement(self.debate_section, XmlElements.note)
         note.set(XmlAttributes.element_type, "chairman")
         note.text = chairman
-        self.save_xml()
+        self.save_changes()
 
 
 class SessionElementsIdBuilder:
@@ -438,12 +412,12 @@ class SessionBodyBuilder(DebateSectionBuilder):
         """
         super().__init__(session_transcript, xml_file)
         self.__name_map = speaker_name_map
-        self.__element_id_builder = SessionElementsIdBuilder(self.xml)
+        self.__element_id_builder = SessionElementsIdBuilder(self.xml_root)
         self.__speaker_id_builder = SpeakerIdBuilder(self.__name_map)
 
     def build_session_body(self):
         """Build the session body."""
-        session_segments = self.transcript.body
+        session_segments = self.session_transcript.body
         if len(session_segments) == 0:
             return
 
@@ -464,7 +438,7 @@ class SessionBodyBuilder(DebateSectionBuilder):
                 self.__build_segment(utterance, content_line.text)
 
             # TODO: Add editorial/gap elements if present
-        self.save_xml()
+        self.save_changes()
 
     def __build_segment(self, utterance: etree.Element, text: str):
         """Build a segment element and add it to the parent utterance element.
