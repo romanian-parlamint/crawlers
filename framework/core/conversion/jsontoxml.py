@@ -11,7 +11,8 @@ from .xmlcreation import SessionHeadingBuilder
 from .xmlcreation import SessionStartEndTimeBuilder
 from .xmlcreation import SessionChairmenBuilder
 from .xmlcreation import SessionBodyBuilder
-from .xmlcreation import SessionStatsAggregator
+from .xmlstats import SessionStatsCalculator
+from .xmlstats import SessionStatsWriter
 from typing import Dict
 import spacy
 
@@ -67,8 +68,9 @@ class SessionTranscriptConverter:
         output_file: str, required
             The path of the output XML file.
         """
-        aggregator = SessionStatsAggregator(output_file,
-                                            nlp_pipeline.tokenizer)
+        stats_provider = SessionStatsCalculator(output_file,
+                                                nlp_pipeline.tokenizer)
+        aggregator = SessionStatsWriter(output_file, stats_provider)
         aggregator.update_statistics()
 
     def __build_session_body(self, session_transcript: SessionTranscript):
