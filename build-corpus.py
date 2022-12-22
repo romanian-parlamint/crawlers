@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Generator
 from framework.utils.loggingutils import configure_logging
 from framework.core.conversion.jsontoxml import SessionTranscriptConverter
-from framework.core.conversion.xmlcreation import RootCorpusFileBuilder
+from framework.core.conversion.rootxmlcreation import RootCorpusFileBuilder
 import pandas as pd
 
 

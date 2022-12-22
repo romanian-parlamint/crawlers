@@ -1,16 +1,16 @@
 """Module responsible for conversion from JSON to  XML."""
 import logging
 from .jsonutils import SessionTranscript
-from .xmlcreation import SessionIdBuilder
-from .xmlcreation import SessionTitleBuilder
-from .xmlcreation import MeetingElementContentsBuilder
-from .xmlcreation import SessionIdNoBuilder
-from .xmlcreation import SessionDateBuilder
-from .xmlcreation import SessionSummaryBuilder
-from .xmlcreation import SessionHeadingBuilder
-from .xmlcreation import SessionStartEndTimeBuilder
-from .xmlcreation import SessionChairmenBuilder
-from .xmlcreation import SessionBodyBuilder
+from .sessionxmlcreation import SessionIdBuilder
+from .sessionxmlcreation import SessionTitleBuilder
+from .sessionxmlcreation import MeetingElementContentsBuilder
+from .sessionxmlcreation import SessionIdNoBuilder
+from .sessionxmlcreation import SessionDateBuilder
+from .sessionxmlcreation import SessionSummaryBuilder
+from .sessionxmlcreation import SessionHeadingBuilder
+from .sessionxmlcreation import SessionStartEndTimeBuilder
+from .sessionxmlcreation import SessionChairmenBuilder
+from .sessionxmlcreation import SessionBodyBuilder
 from .xmlstats import SessionStatsCalculator
 from .xmlstats import SessionStatsWriter
 from typing import Dict
