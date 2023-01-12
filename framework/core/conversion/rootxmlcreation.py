@@ -1,6 +1,8 @@
 """Module responsible for creating root XML files."""
 from lxml import etree
 from .xmlutils import XmlDataManipulator
+from .xmlstats import SessionStatsReader
+from .xmlstats import CorpusStatsWriter
 
 
 class RootCorpusFileBuilder(XmlDataManipulator):
@@ -44,4 +46,6 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         component_path: str, required
             The path of the corpus component file.
         """
-        pass
+        provider = SessionStatsReader(component_path)
+        writer = CorpusStatsWriter(self.xml_root, provider)
+        writer.update_statistics()

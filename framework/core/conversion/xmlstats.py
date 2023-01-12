@@ -2,6 +2,7 @@
 from typing import List
 from typing import Dict
 from typing import Callable
+from lxml import etree
 from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlAttributes
 from .xmlutils import XmlElements
@@ -95,6 +96,7 @@ class SessionStatsWriter(XmlDataManipulator):
 
     def __set_tag_usage(self):
         """Update the values for tagUsage elements."""
+        tag_counts = self.__provider.get_tag_counts()
         name_map = {
             "text": XmlElements.text,
             "body": XmlElements.body,
@@ -107,7 +109,6 @@ class SessionStatsWriter(XmlDataManipulator):
             "desc": XmlElements.desc,
             "gap": XmlElements.gap
         }
-        tag_counts = self.__provider.get_tag_counts()
         for tag_usage in self.xml_root.iterdescendants(
                 tag=XmlElements.tagUsage):
             tag_name = name_map[tag_usage.get(XmlAttributes.gi)]
@@ -132,3 +133,133 @@ class SessionStatsWriter(XmlDataManipulator):
             else:
                 txt = Resources.NumWordsRo if lang == 'ro' else Resources.NumWordsEn
             m.text = txt.format(qty)
+
+
+class SessionStatsReader(XmlDataManipulator):
+    """Reads the statistics from session XML file."""
+
+    def __init__(self, xml_file: str):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        xml_file: str, required
+            The path of the session XML file from where to read stats.
+        """
+        XmlDataManipulator.__init__(self, xml_file)
+
+    def get_num_words(self) -> int:
+        """Compute the number of words from the session transcription.
+
+        Returns
+        -------
+        num_words: int
+            The number of words in the transcription.
+        """
+        return self.__get_measure('words')
+
+    def get_num_speeches(self) -> int:
+        """Compute the number of utterances.
+
+        Returns
+        -------
+        num_speeches: int
+            The number of speeches in the transcription.
+        """
+        return self.__get_measure('speeches')
+
+    def get_tag_counts(self) -> Dict[str, int]:
+        """Compute the number of times each tag appears in the document.
+
+        Returns
+        -------
+        tag_counts: dict of (str, int)
+            A dictionary containing each tag and the number of times it appears in the document.
+        """
+        tag_counts = {}
+        for tag_usage in self.xml_root.iterdescendants(
+                tag=XmlElements.tagUsage):
+            tag_type = tag_usage.get(XmlAttributes.gi)
+            num_occurences = int(tag_usage.get(XmlAttributes.occurs))
+            tag_counts[tag_type] = num_occurences
+        return tag_counts
+
+    def __get_measure(self, unit: str, lang: str = "ro") -> int:
+        """Get the value of a measure element with the specified unit and language.
+
+        Parameters
+        ----------
+        unit: str, required
+            The unit of the element.
+        lang: str, required
+            The language of the element.
+
+        Returns
+        -------
+        quantity: int
+            The value of the measure.
+        """
+        for m in self.xml_root.iterdescendants(tag=XmlElements.measure):
+            if m.getparent().tag != XmlElements.extent:
+                continue
+            measure_unit = m.get(XmlAttributes.unit)
+            measure_lang = m.get(XmlAttributes.lang)
+            if measure_unit == unit and measure_lang == lang:
+                return int(m.get(XmlAttributes.quantity))
+        return None
+
+
+class CorpusStatsWriter:
+    """Updates the statistics for the root corpus file."""
+
+    def __init__(self, xml_root: etree.Element,
+                 stats_provider: SessionStatsReader):
+        """Create a new instance of the class.
+
+        Parameters
+        ----------
+        xml_root: etree.Element, required
+            The root element of the corpus file.
+        stats_provider: SessionStatsReader, required
+            The provider of the session statistics.
+        """
+        self.__xml_root = xml_root
+        self.__provider = stats_provider
+
+    def update_statistics(self):
+        """Update the corpus statistics with the values from the statistics provider."""
+        self.__update_speech_counts()
+        self.__update_tag_usage()
+
+    def __update_speech_counts(self):
+        """Update the counts for number of speeches and number of words."""
+        num_speeches = self.__provider.get_num_speeches()
+        num_words = self.__provider.get_num_words()
+        for m in self.__xml_root.iterdescendants(tag=XmlElements.measure):
+            if m.getparent().tag != XmlElements.extent:
+                continue
+            lang = m.get(XmlAttributes.lang)
+            unit = m.get(XmlAttributes.unit)
+            quantity = int(m.get(XmlAttributes.quantity))
+
+            delta = num_speeches if unit == 'speeches' else num_words
+            quantity += delta
+
+            m.set(XmlAttributes.quantity, str(quantity))
+            if unit == 'speeches':
+                txt = Resources.NumSpeechesRo if lang == 'ro' else Resources.NumSpeechesEn
+            else:
+                txt = Resources.NumWordsRo if lang == 'ro' else Resources.NumWordsEn
+            m.text = txt.format(quantity)
+
+    def __update_tag_usage(self):
+        """Update the counts for tag usage."""
+        tag_counts = self.__provider.get_tag_counts()
+        for tag_usage in self.__xml_root.iterdescendants(
+                tag=XmlElements.tagUsage):
+            tag_name = tag_usage.get(XmlAttributes.gi)
+            num_occurences = int(tag_usage.get(XmlAttributes.occurs))
+            delta = tag_counts[tag_name] if tag_name in tag_counts else 0
+            num_occurences += delta
+            print(tag_name, num_occurences)
+            tag_usage.set(XmlAttributes.occurs, str(num_occurences))
