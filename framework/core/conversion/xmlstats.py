@@ -261,5 +261,4 @@ class CorpusStatsWriter:
             num_occurences = int(tag_usage.get(XmlAttributes.occurs))
             delta = tag_counts[tag_name] if tag_name in tag_counts else 0
             num_occurences += delta
-            print(tag_name, num_occurences)
             tag_usage.set(XmlAttributes.occurs, str(num_occurences))
