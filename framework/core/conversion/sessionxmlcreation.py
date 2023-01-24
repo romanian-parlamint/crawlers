@@ -1,9 +1,7 @@
 """Module responsible for creating XML elements."""
-import re
 from babel.dates import format_date
 from lxml import etree
 from typing import List
-from typing import Dict
 from .jsonutils import SessionTranscript
 from .jsonutils import BodySegment
 from .jsonutils import Speaker
