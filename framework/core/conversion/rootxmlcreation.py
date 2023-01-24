@@ -29,14 +29,23 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         corpus_file: str, required
             The path of the file to add to the corpus.
         """
+        self.__update_tag_usage(corpus_file)
+        self.__add_component_file(corpus_file)
+        self.save_changes(self.__file_path)
+
+    def __add_component_file(self, component_path: str):
+        """Add the component path to the `include` element.
+
+        Parameters
+        ----------
+        component_path: str, required
+            The path of the corpus component file.
+        """
         etree.register_namespace("xsi", "http://www.w3.org/2001/XInclude")
         qname = etree.QName("http://www.w3.org/2001/XInclude", "include")
         include_element = etree.Element(qname)
-        include_element.set("href", corpus_file)
-        self.__update_tag_usage(corpus_file)
+        include_element.set("href", component_path)
         self.xml_root.append(include_element)
-
-        self.save_changes(self.__file_path)
 
     def __update_tag_usage(self, component_path: str):
         """Update the values of `tagUsage` element with the values from the corpus component file.
