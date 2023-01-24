@@ -32,6 +32,8 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         XmlDataManipulator.__init__(self, template_file)
         self.__file_path = file_path
         self.__speaker_info_provider = speaker_info_provider
+        self.__person_list = PersonListManipulator(self.xml_root)
+        self.__org_list = OrganizationsListManipulator(self.xml_root)
 
     def add_corpus_file(self, corpus_file: str):
         """Add the specified file to the corpus root file.
@@ -42,8 +44,23 @@ class RootCorpusFileBuilder(XmlDataManipulator):
             The path of the file to add to the corpus.
         """
         self.__update_tag_usage(corpus_file)
+        self.__update_speakers_list(corpus_file)
         self.__add_component_file(corpus_file)
         self.save_changes(self.__file_path)
+
+    def __update_speakers_list(self, component_path: str):
+        """Update the list of speakers with the speakers from the session transcript.
+
+        Parameters
+        ----------
+        component_path: str, required
+            The path of the corpus component file.
+        """
+        speaker_reader = SessionSpeakersReader(component_path)
+        for speaker_id in speaker_reader.get_speaker_ids():
+            session_date = speaker_reader.session_date
+            term = self.__org_list.get_legislative_term(session_date)
+            self.__person_list.add_or_update_person(speaker_id, term)
 
     def __add_component_file(self, component_path: str):
         """Add the component path to the `include` element.
@@ -146,13 +163,13 @@ class OrganizationsListManipulator:
         return self.__parliament_org
 
     @property
-    def legislative_terms(self) -> List[Tuple[str, date, date]]:
+    def legislative_terms(self) -> List[Tuple[str, str, date, date]]:
         """Get the legislative terms of the Parliament from the corpus root file.
 
         Returns
         -------
-        legislative_terms: list of (str, date, date) tuples
-            The legislative terms as tuples of (id, start date, end date).
+        legislative_terms: list of (str, str, date, date) tuples
+            The legislative terms as tuples of (id, organization id, start date, end date).
         """
         if self.__legislative_terms is None:
             self.__legislative_terms = list(self.__load_legislative_terms())
@@ -168,33 +185,34 @@ class OrganizationsListManipulator:
             The tuple containing the term id, organization id, start date and end date
             of the legislative term if found; otherwise (None, None, None, None).
         """
-        for term_id, term_start, term_end in self.legislative_terms:
+        for term in self.legislative_terms:
+            _, _, term_start, term_end = term
             end_date = date.max if term_end is None else term_end
             if term_start <= session_date <= end_date:
-                return (term_id, term_start, term_end)
+                return term
 
         logging.error("Could not find legislative term for session date %s.",
                       session_date)
         return (None, None, None)
 
     def __load_legislative_terms(
-            self) -> Generator[Tuple[str, date, date], None, None]:
+            self) -> Generator[Tuple[str, str, date, date], None, None]:
         """Load legislative terms from the root file.
 
         Returns
-        legislative_terms: generator of (str, date, date) tuples
-            The list of legislative terms as tuples of (term id, start date, end date).
+        legislative_terms: generator of (str, str, date, date) tuples
+            The list of legislative terms as tuples of (term id, parliament organization id, start date, end date).
         """
         parliament = self.parliament
-
+        org_id = "#{}".format(parliament.get(XmlAttributes.xml_id))
         for event in parliament.iterdescendants(tag=XmlElements.event):
-            term_id = event.get(XmlAttributes.xml_id)
+            term_id = "#{}".format(event.get(XmlAttributes.xml_id))
             term_start = date.fromisoformat(
                 event.get(XmlAttributes.event_start))
             event_end = event.get(XmlAttributes.event_end)
             term_end = date.fromisoformat(
                 event_end) if event_end is not None else None
-            yield ("#{}".format(term_id), term_start, term_end)
+            yield (term_id, org_id, term_start, term_end)
 
 
 class PersonListManipulator:
@@ -213,15 +231,15 @@ class PersonListManipulator:
             xml_root.iterdescendants(tag=XmlElements.listPerson))
 
     def add_or_update_person(self, person_id: str,
-                             legislative_term: Tuple[str, date, date]):
+                             legislative_term: Tuple[str, str, date, date]):
         """Add or update person.
 
         Parameters
         ----------
         person_id: str, required
             The id of the person to add or update.
-        legislative_term: tuple of (str, date, date), required
-            The legislative term as a tuple of (term id, start date, end date) in which the person appears.
+        legislative_term: tuple of (str, str, date, date), required
+            The legislative term as a tuple of (term id, organization id, start date, end date) in which the person appears.
         """
         person_id = person_id.replace('#', '')
         person = self.__get_person(person_id)
@@ -230,23 +248,31 @@ class PersonListManipulator:
         self.__update_affiliation(person, legislative_term)
 
     def __update_affiliation(self, person: etree.Element,
-                             legislative_term: Tuple[str, date, date]):
+                             legislative_term: Tuple[str, str, date, date]):
         """Add the legislative term to the affiliation of the person if it doesn't exist.
 
         Parameters
         ----------
         person: etree.Element, required
             The person element to update.
-        legislative_term: tuple of (str, date, date), required
-            The id, start date, and end date of the legislative term.
+        legislative_term: tuple of (str, str, date, date), required
+            The id, organization id, start date, and end date of the legislative term.
         """
-        term_id, start_date, end_date = legislative_term
+        term_id, organization_id, start_date, end_date = legislative_term
         for affiliation in person.iterdescendants(tag=XmlElements.affiliation):
             if affiliation.get(XmlAttributes.ana) == term_id:
                 # Affiliation already exists; nothing to do.
                 return
 
         affiliation = etree.SubElement(person, XmlElements.affiliation)
+        affiliation.set(XmlAttributes.ana, term_id)
+        affiliation.set(XmlAttributes.ref, organization_id)
+        affiliation.set(XmlAttributes.role, "member")
+        affiliation.set(XmlAttributes.event_start,
+                        start_date.strftime("%Y-%m-%d"))
+        if end_date is not None:
+            affiliation.set(XmlAttributes.event_end,
+                            end_date.strftime("%Y-%m-%d"))
 
     def __create_person(self, person_id: str) -> etree.Element:
         """Create a person element with the provided info.
