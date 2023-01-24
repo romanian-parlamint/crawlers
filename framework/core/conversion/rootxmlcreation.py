@@ -1,14 +1,23 @@
 """Module responsible for creating root XML files."""
-from lxml import etree
-from .xmlutils import XmlDataManipulator
-from .xmlstats import SessionStatsReader
+from .namemapping import SpeakerInfoProvider
 from .xmlstats import CorpusStatsWriter
+from .xmlstats import SessionStatsReader
+from .xmlutils import XmlDataManipulator
+from .xmlutils import XmlElements, XmlAttributes
+from datetime import date
+from datetime import datetime
+from lxml import etree
+from typing import Generator
+from typing import List
+from typing import Tuple
+import logging
 
 
 class RootCorpusFileBuilder(XmlDataManipulator):
     """Builds the root file of the corpus."""
 
-    def __init__(self, file_path: str, template_file: str):
+    def __init__(self, file_path: str, template_file: str,
+                 speaker_info_provider: SpeakerInfoProvider):
         """Create a new instance of the class.
 
         Parameters
@@ -17,9 +26,12 @@ class RootCorpusFileBuilder(XmlDataManipulator):
             The path of the corpus root file.
         template_file: str, required
             The path of the corpus root template file.
+        speaker_info_provider: SpeakerInfoProvider, required
+            An instance of SpeakerInfoProvider used for filling speaker info.
         """
         XmlDataManipulator.__init__(self, template_file)
         self.__file_path = file_path
+        self.__speaker_info_provider = speaker_info_provider
 
     def add_corpus_file(self, corpus_file: str):
         """Add the specified file to the corpus root file.

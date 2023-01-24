@@ -62,7 +62,8 @@ def main(args):
 
     root_file_path = str(output_dir / Path("ParlaMint-RO.xml"))
     root_builder = RootCorpusFileBuilder(root_file_path,
-                                         args.corpus_root_template)
+                                         args.corpus_root_template,
+                                         speaker_info_provider)
     total, processed, failed = 0, 0, 0
     for f in iter_files(args.input_directory):
         total = total + 1
