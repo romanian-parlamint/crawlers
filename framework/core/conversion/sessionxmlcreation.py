@@ -7,12 +7,11 @@ from typing import Dict
 from .jsonutils import SessionTranscript
 from .jsonutils import BodySegment
 from .jsonutils import Speaker
-from .xmlutils import load_xml
-from .xmlutils import save_xml
 from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlAttributes
 from .xmlutils import XmlElements
 from .xmlutils import Resources
+from .namemapping import SpeakerInfoProvider
 
 
 class SessionIdBuilder(XmlDataManipulator):
@@ -357,48 +356,11 @@ class SessionElementsIdBuilder:
             segment=self.__segment_id)
 
 
-class SpeakerIdBuilder:
-    """Builds the speaker id from speaker name."""
-
-    def __init__(self, name_map: Dict[str, str]):
-        """Create a new instance of the class.
-
-        Parameters
-        ----------
-        name_map: dict of (str, str), required
-            The map of speaker names.
-        """
-        self.__name_map = name_map
-        self.__translations = str.maketrans({'Ț': 'Tz', 'ț': 'tz', ' ': '-'})
-
-    def build_speaker_id(self, speaker_name: str) -> str:
-        """Build speaker id from speaker name.
-
-        Parameters
-        ----------
-        speaker_name: str, required
-            The speaker name.
-
-        Returns
-        -------
-        speaker_id: str
-            The id of the speaker.
-        """
-        speaker_name = speaker_name.strip()
-        correct_name = speaker_name
-        if speaker_name in self.__name_map:
-            correct_name = self.__name_map[speaker_name]
-
-        canonical_id = correct_name.translate(self.__translations)
-        canonical_id = re.sub(r"-{2,}", '-', canonical_id)
-        return "#{}".format(canonical_id)
-
-
 class SessionBodyBuilder(DebateSectionBuilder):
     """Builds the nodes containing the session body."""
 
     def __init__(self, session_transcript: SessionTranscript,
-                 speaker_name_map: Dict[str, str], xml_file: str):
+                 speaker_info_provider: SpeakerInfoProvider, xml_file: str):
         """Create a new instance of the class.
 
         Parameters
@@ -407,13 +369,12 @@ class SessionBodyBuilder(DebateSectionBuilder):
             The session transcript.
         xml_file: str, required
             The file containing session transcript in XML format.
-        speaker_name_map: dict of (str, str), required
-            The dictionary mapping speaker names from documents to their actual names.
+        speaker_info_provider: SpeakerInfoProvider, required
+            An instance of SpeakerInfoProvider used for building speaker id.
         """
         super().__init__(session_transcript, xml_file)
-        self.__name_map = speaker_name_map
         self.__element_id_builder = SessionElementsIdBuilder(self.xml_root)
-        self.__speaker_id_builder = SpeakerIdBuilder(self.__name_map)
+        self.__speaker_info_provider = speaker_info_provider
 
     def build_session_body(self):
         """Build the session body."""
@@ -473,7 +434,7 @@ class SessionBodyBuilder(DebateSectionBuilder):
         utterance = etree.SubElement(self.debate_section, XmlElements.u)
         speaker_type = "#chair" if speaker_name == chairman_name else "#regular"
         utterance.set(XmlAttributes.ana, speaker_type)
-        speaker_id = self.__speaker_id_builder.build_speaker_id(speaker_name)
+        speaker_id = self.__speaker_info_provider.get_speaker_id(speaker_name)
         utterance.set(XmlAttributes.who, speaker_id)
         utterance.set(XmlAttributes.xml_id,
                       self.__element_id_builder.get_utterance_id())
@@ -553,7 +514,4 @@ class SessionBodyBuilder(DebateSectionBuilder):
         if speaker is None:
             return None
 
-        if speaker.full_name in self.__name_map:
-            return self.__name_map[speaker.full_name]
-
-        return speaker.full_name
+        return self.__speaker_info_provider.get_speaker_name(speaker.full_name)

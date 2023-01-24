@@ -7,6 +7,7 @@ from typing import Generator
 from framework.utils.loggingutils import configure_logging
 from framework.core.conversion.jsontoxml import SessionTranscriptConverter
 from framework.core.conversion.rootxmlcreation import RootCorpusFileBuilder
+from framework.core.conversion.namemapping import SpeakerInfoProvider
 import pandas as pd
 
 
@@ -57,6 +58,7 @@ def main(args):
     output_dir.mkdir(exist_ok=True, parents=True)
     df = pd.read_csv(args.speaker_name_map)
     name_map = {row.name.lower(): row.correct_name for row in df.itertuples()}
+    speaker_info_provider = SpeakerInfoProvider(name_map)
 
     root_file_path = str(output_dir / Path("ParlaMint-RO.xml"))
     root_builder = RootCorpusFileBuilder(root_file_path,
@@ -67,7 +69,8 @@ def main(args):
         try:
             output_file = build_output_file_path(f, str(output_dir))
             converter = SessionTranscriptConverter(f, args.session_template,
-                                                   name_map, output_file)
+                                                   speaker_info_provider,
+                                                   output_file)
             converter.covert()
             root_builder.add_corpus_file(output_file)
             processed = processed + 1

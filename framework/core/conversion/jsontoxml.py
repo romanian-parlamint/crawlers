@@ -13,7 +13,7 @@ from .sessionxmlcreation import SessionChairmenBuilder
 from .sessionxmlcreation import SessionBodyBuilder
 from .xmlstats import SessionStatsCalculator
 from .xmlstats import SessionStatsWriter
-from typing import Dict
+from .namemapping import SpeakerInfoProvider
 import spacy
 
 nlp_pipeline = spacy.load('ro_core_news_lg')
@@ -23,7 +23,7 @@ class SessionTranscriptConverter:
     """Convert session transcript from JSON to XML."""
 
     def __init__(self, input_file: str, session_template: str,
-                 name_map: Dict[str, str], output_file: str):
+                 speaker_info_provider: SpeakerInfoProvider, output_file: str):
         """Create a new instance of the class.
 
         Parameters
@@ -32,14 +32,14 @@ class SessionTranscriptConverter:
             The path of the session transcript in JSON format.
         session_template: str, required
             The path of the XML file containing session template.
-        name_map: dict, required
-            The map of speaker names to their correct names.
+        speaker_info_provider: SpeakerInfoProvider, required
+            The instance of SpeakerInfoProvider used to get speaker data.
         output_file: str, required
             The path of the output file.
         """
         self.__input_file = input_file
         self.__session_template = session_template
-        self.__name_map = name_map
+        self.__speaker_info_provider = speaker_info_provider
         self.__output_file = output_file
 
     def covert(self):
@@ -81,7 +81,8 @@ class SessionTranscriptConverter:
         session_transcript: SessionTranscript, required
             The session transcript.
         """
-        builder = SessionBodyBuilder(session_transcript, self.__name_map,
+        builder = SessionBodyBuilder(session_transcript,
+                                     self.__speaker_info_provider,
                                      self.__output_file)
         builder.build_session_body()
 
