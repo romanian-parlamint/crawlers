@@ -84,7 +84,8 @@ def main(args):
                 "Failed to build session XML from %s. Exception: %r", f, e)
 
     logging.info("Processed: %s/%s", processed, total)
-    logging.info("Failed: %s/%s", failed, total)
+    if failed > 0:
+        logging.info("Failed: %s/%s", failed, total)
     logging.info("That's all folks!")
 
 
