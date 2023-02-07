@@ -337,7 +337,6 @@ class PersonListManipulator:
         sex_element = etree.SubElement(person, XmlElements.sex)
         sex = sex if sex is not None else 'U'
         sex_element.set(XmlAttributes.value, sex)
-        sex_element.text = sex
 
         if profile_image is not None:
             figure = etree.SubElement(person, XmlElements.figure)
