@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 """Build ParlaMint-RO corpus by converting sessions into XML format."""
-import logging
 from argparse import Namespace, ArgumentParser
-from pathlib import Path
-from typing import Generator
-from framework.utils.loggingutils import configure_logging
+from ast import literal_eval
 from framework.core.conversion.jsontoxml import SessionTranscriptConverter
-from framework.core.conversion.rootxmlcreation import RootCorpusFileBuilder
+from framework.core.conversion.namemapping import SpeakerInfo
 from framework.core.conversion.namemapping import SpeakerInfoProvider
+from framework.core.conversion.rootxmlcreation import RootCorpusFileBuilder
+from framework.utils.loggingutils import configure_logging
+from pathlib import Path
+from typing import Dict
+from typing import Generator
+from typing import List
+import logging
 import pandas as pd
 
 
@@ -52,13 +56,71 @@ def build_output_file_path(input_file: str, output_dir: str) -> str:
     return str(output_file)
 
 
+def read_personal_information(personal_info_file: str) -> List[SpeakerInfo]:
+    """Read personal information from the specified file.
+
+    Parameters
+    ----------
+    personal_info_file: str, required
+        The path of the CSV file containing personal info.
+
+    Returns
+    -------
+    personal_info: list of SpeakerInfo
+        The personal info as a list of SpeakerInfo instances.
+    """
+
+    def is_empty(value: str) -> bool:
+        return pd.isnull(value) or pd.isna(value) or len(value) == 0
+
+    names = set()
+    personal_info = []
+    df = pd.read_csv(personal_info_file,
+                     converters={
+                         'first_name': literal_eval,
+                         'last_name': literal_eval
+                     })
+
+    for row in df.itertuples():
+        if row.full_name in names:
+            continue
+        profile_image = None if is_empty(
+            row.profile_image) else row.profile_image
+        item = SpeakerInfo(row.first_name,
+                           row.last_name,
+                           sex=row.sex,
+                           profile_image=profile_image)
+        personal_info.append(item)
+        names.add(row.full_name)
+    return personal_info
+
+
+def read_name_map(file_path: str) -> Dict[str, str]:
+    """Read the name map from the specified CSV file.
+
+    Parameters
+    ----------
+    file_path: str, required
+        The path of the CSV file containing name mapping data.
+
+    Returns
+    -------
+    name_map: dict of (str,str)
+        The dictionary mapping names as they appear in the transcripts to the correct names.
+    """
+    df = pd.read_csv(file_path)
+    name_map = {row.name.lower(): row.correct_name for row in df.itertuples()}
+    return name_map
+
+
 def main(args):
     """Entry point of the module."""
     output_dir = Path(args.output_directory)
     output_dir.mkdir(exist_ok=True, parents=True)
-    df = pd.read_csv(args.speaker_name_map)
-    name_map = {row.name.lower(): row.correct_name for row in df.itertuples()}
-    speaker_info_provider = SpeakerInfoProvider(name_map)
+
+    speaker_info_provider = SpeakerInfoProvider(
+        read_name_map(args.speaker_name_map),
+        read_personal_information(args.profile_info))
 
     root_file_path = str(output_dir / Path("ParlaMint-RO.xml"))
     root_builder = RootCorpusFileBuilder(root_file_path,
@@ -114,6 +176,9 @@ def parse_arguments() -> Namespace:
         help="The path of the CSV file mapping speaker names to correct names.",
         type=str,
         default='data/speakers/speaker-name-map.csv')
+    parser.add_argument('--profile-info',
+                        help="The CSV file containing profile info.",
+                        default='data/speakers/profile-info.csv')
     parser.add_argument('-o',
                         '--output-directory',
                         help="The directory where to save corpus files.",

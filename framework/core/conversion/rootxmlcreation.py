@@ -4,6 +4,7 @@ from .xmlstats import CorpusStatsWriter
 from .xmlstats import SessionStatsReader
 from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlElements, XmlAttributes
+from collections import namedtuple
 from datetime import date
 from datetime import datetime
 from lxml import etree
@@ -16,8 +17,11 @@ import logging
 class RootCorpusFileBuilder(XmlDataManipulator):
     """Builds the root file of the corpus."""
 
-    def __init__(self, file_path: str, template_file: str,
-                 speaker_info_provider: SpeakerInfoProvider):
+    def __init__(self,
+                 file_path: str,
+                 template_file: str,
+                 speaker_info_provider: SpeakerInfoProvider,
+                 append: bool = False):
         """Create a new instance of the class.
 
         Parameters
@@ -28,8 +32,11 @@ class RootCorpusFileBuilder(XmlDataManipulator):
             The path of the corpus root template file.
         speaker_info_provider: SpeakerInfoProvider, required
             An instance of SpeakerInfoProvider used for filling speaker info.
+        append: bool, optional
+            A flag indicating whether to append to existing file or to start from scratch.
         """
-        XmlDataManipulator.__init__(self, template_file)
+        root_file = file_path if append else template_file
+        XmlDataManipulator.__init__(self, root_file)
         self.__file_path = file_path
         self.__speaker_info_provider = speaker_info_provider
         self.__person_list = PersonListManipulator(self.xml_root)
@@ -60,7 +67,11 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         for speaker_id in speaker_reader.get_speaker_ids():
             session_date = speaker_reader.session_date
             term = self.__org_list.get_legislative_term(session_date)
-            self.__person_list.add_or_update_person(speaker_id, term)
+            pi = self.__speaker_info_provider.get_personal_info(speaker_id)
+            self.__person_list.add_or_update_person(
+                speaker_id, term,
+                PersonalInformation(pi.first_name, pi.last_name, pi.sex,
+                                    pi.profile_image))
 
     def __add_component_file(self, component_path: str):
         """Add the component path to the `include` element.
@@ -215,6 +226,11 @@ class OrganizationsListManipulator:
             yield (term_id, org_id, term_start, term_end)
 
 
+Term = namedtuple('Term', ['org_id', 'term_id', 'start_date', 'end_date'])
+PersonalInformation = namedtuple(
+    'PersonalInformation', ["first_name", "last_name", "sex", "profile_image"])
+
+
 class PersonListManipulator:
     """Hadles updates and queries on the `listPerson` element contents."""
 
@@ -230,8 +246,8 @@ class PersonListManipulator:
         self.__persons_list = next(
             xml_root.iterdescendants(tag=XmlElements.listPerson))
 
-    def add_or_update_person(self, person_id: str,
-                             legislative_term: Tuple[str, str, date, date]):
+    def add_or_update_person(self, person_id: str, legislative_term: Term,
+                             personal_info: PersonalInformation):
         """Add or update person.
 
         Parameters
@@ -240,15 +256,20 @@ class PersonListManipulator:
             The id of the person to add or update.
         legislative_term: tuple of (str, str, date, date), required
             The legislative term as a tuple of (term id, organization id, start date, end date) in which the person appears.
+        personal_info: PersonalInformation, required
+            The personal information.
         """
         person_id = person_id.replace('#', '')
         person = self.__get_person(person_id)
         if person is None:
-            person = self.__create_person(person_id)
+            person = self.__create_person(person_id, personal_info.first_name,
+                                          personal_info.last_name,
+                                          personal_info.sex,
+                                          personal_info.profile_image)
         self.__update_affiliation(person, legislative_term)
 
     def __update_affiliation(self, person: etree.Element,
-                             legislative_term: Tuple[str, str, date, date]):
+                             legislative_term: Term):
         """Add the legislative term to the affiliation of the person if it doesn't exist.
 
         Parameters
@@ -274,13 +295,26 @@ class PersonListManipulator:
             affiliation.set(XmlAttributes.event_end,
                             end_date.strftime("%Y-%m-%d"))
 
-    def __create_person(self, person_id: str) -> etree.Element:
+    def __create_person(self,
+                        person_id: str,
+                        first_name: List[str],
+                        last_name: List[str],
+                        sex: str = None,
+                        profile_image: str = None) -> etree.Element:
         """Create a person element with the provided info.
 
         Parameters
         ----------
         person_id: str, required
             The id of the person element.
+        first_name: list of str, required
+            The first name of the person.
+        last_name: list of str, required
+            The last name of the person.
+        sex: str, optional
+            The sex of the person.
+        profile_image: str, optional
+            The URL of the profile image of the person.
 
         Returns
         -------
@@ -289,6 +323,27 @@ class PersonListManipulator:
         """
         person = etree.SubElement(self.__persons_list, XmlElements.person)
         person.set(XmlAttributes.xml_id, person_id)
+
+        person_name = etree.SubElement(person, XmlElements.persName)
+        for part in first_name:
+            forename = etree.SubElement(person_name, XmlElements.forename)
+            forename.text = part
+
+        for part in last_name:
+            surname = etree.SubElement(person_name, XmlElements.surname)
+            surname.text = part
+
+        sex_element = etree.SubElement(person, XmlElements.sex)
+        sex = sex if sex is not None else 'U'
+        sex_element.set(XmlAttributes.value, sex)
+        sex_element.text = sex
+
+        if profile_image is not None:
+            figure = etree.SubElement(person, XmlElements.figure)
+            graphic = etree.SubElement(figure, XmlElements.graphic)
+            graphic.set(XmlAttributes.url, profile_image)
+            print(profile_image)
+
         return person
 
     def __get_person(self, person_id: str) -> etree.Element:
