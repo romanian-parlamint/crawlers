@@ -342,7 +342,6 @@ class PersonListManipulator:
             figure = etree.SubElement(person, XmlElements.figure)
             graphic = etree.SubElement(figure, XmlElements.graphic)
             graphic.set(XmlAttributes.url, profile_image)
-            print(profile_image)
 
         return person
 
