@@ -11,6 +11,7 @@ from lxml import etree
 from typing import Generator
 from typing import List
 from typing import Tuple
+from pathlib import Path
 import logging
 
 
@@ -84,7 +85,7 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         etree.register_namespace("xsi", "http://www.w3.org/2001/XInclude")
         qname = etree.QName("http://www.w3.org/2001/XInclude", "include")
         include_element = etree.Element(qname)
-        include_element.set("href", component_path)
+        include_element.set("href", Path(component_path).name)
         self.xml_root.append(include_element)
 
     def __update_tag_usage(self, component_path: str):
