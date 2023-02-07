@@ -202,6 +202,7 @@ class SpeakerInfoProvider:
         speaker_id = self.__build_speaker_id(full_name)
         self.__id_map[normalized_name] = speaker_id
         self.__info_map[speaker_id] = self.__get_personal_info(full_name)
+        self.__info_map[speaker_id].speaker_id = speaker_id
         return speaker_id
 
     def get_personal_info(self, speaker_id: str) -> dict:
