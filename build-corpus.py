@@ -51,7 +51,10 @@ def build_output_file_path(input_file: str, output_dir: str) -> str:
     """
     output_dir = Path(output_dir)
     input_file = Path(input_file)
-    file_path = Path('ParlaMint-RO-{}.xml'.format(input_file.stem))
+    parts = input_file.stem.split('-')
+    date = "-".join(parts[:-1])
+    id = parts[-1]
+    file_path = Path('ParlaMint-RO_{}-id{}.xml'.format(date, id))
     output_file = output_dir / file_path
     return str(output_file)
 

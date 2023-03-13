@@ -33,8 +33,8 @@ class SessionIdBuilder(XmlDataManipulator):
 
     def build_session_id(self):
         """Build session id and save file."""
-        xml_id = "ParlaMint-RO-{}-{}".format(self.__transcript.session_date,
-                                             self.__transcript.session_id)
+        xml_id = "ParlaMint-RO_{}-id{}".format(self.__transcript.session_date,
+                                               self.__transcript.session_id)
         self.xml_root.set(XmlAttributes.xml_id, xml_id)
         self.save_changes(self.__output_file)
 
