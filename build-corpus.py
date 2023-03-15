@@ -137,7 +137,7 @@ def main(args):
             converter = SessionTranscriptConverter(f, args.session_template,
                                                    speaker_info_provider,
                                                    output_file)
-            converter.covert()
+            converter.covert(args.build_sample)
             root_builder.add_corpus_file(output_file)
             processed = processed + 1
         except Exception as e:
@@ -186,6 +186,10 @@ def parse_arguments() -> Namespace:
                         '--output-directory',
                         help="The directory where to save corpus files.",
                         default="corpus")
+    parser.add_argument('--sample',
+                        help="When present, build sample corpus.",
+                        action='store_true',
+                        dest='build_sample')
 
     parser.add_argument(
         '-l',

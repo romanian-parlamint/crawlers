@@ -77,8 +77,14 @@ class SessionTitleBuilder(JsonTranscriptToXmlConverter):
         JsonTranscriptToXmlConverter.__init__(self, session_transcript,
                                               xml_file)
 
-    def build_session_title(self):
-        """Build session title."""
+    def build_session_title(self, add_sample_tag: bool = False):
+        """Build session title.
+
+        Parameters
+        ----------
+        add_sample_tag: bool, optional
+            Instructs the builder to add sample tag when true.
+        """
         session_date = self.session_transcript.session_date
         ro_date = format_date(session_date, "d MMMM yyyy", locale="ro")
         en_date = format_date(session_date, "MMMM d yyyy", locale="en")
@@ -91,9 +97,13 @@ class SessionTitleBuilder(JsonTranscriptToXmlConverter):
             lang = elem.get(XmlAttributes.lang)
             if title_type == 'main' and lang == 'ro':
                 elem.text = Resources.SessionTitleRo.format(ro_date)
+                if add_sample_tag:
+                    elem.text = elem.text + ' [ParlaMint SAMPLE]'
 
             if title_type == 'main' and lang == 'en':
                 elem.text = Resources.SessionTitleEn.format(en_date)
+                if add_sample_tag:
+                    elem.text = elem.text + ' [ParlaMint SAMPLE]'
 
             if title_type == 'sub' and lang == 'ro':
                 elem.text = Resources.SessionSubtitleRo.format(ro_date)

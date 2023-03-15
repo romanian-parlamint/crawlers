@@ -42,13 +42,19 @@ class SessionTranscriptConverter:
         self.__speaker_info_provider = speaker_info_provider
         self.__output_file = output_file
 
-    def covert(self):
-        """Convert session transcript to XML format."""
+    def covert(self, is_sample: bool = False):
+        """Convert session transcript to XML format.
+
+        Parameters
+        ----------
+        is_sample: bool, optional
+            Specifies if the current session is a sample or not.
+        """
         logging.info("Converting from {} to {}.".format(
             self.__input_file, self.__output_file))
         session_transcript = SessionTranscript(self.__input_file)
         self.__build_session_id(session_transcript)
-        self.__build_session_title(session_transcript)
+        self.__build_session_title(session_transcript, is_sample)
         self.__build_meeting_contents(session_transcript)
         self.__build_idno_contents(session_transcript)
         self.__build_date_contents(session_transcript)
@@ -179,16 +185,19 @@ class SessionTranscriptConverter:
                                                 self.__output_file)
         builder.build_meeting_info()
 
-    def __build_session_title(self, session_transcript: SessionTranscript):
+    def __build_session_title(self, session_transcript: SessionTranscript,
+                              is_sample: bool):
         """Build session title.
 
         Parameters
         ----------
         session_transcript: SessionTranscript, required
             The session transcript.
+        is_sample: bool, required
+            Determines whether to build the title of a sample session or not.
         """
         builder = SessionTitleBuilder(session_transcript, self.__output_file)
-        builder.build_session_title()
+        builder.build_session_title(add_sample_tag=is_sample)
 
     def __build_session_id(self, session_transcript: SessionTranscript):
         """Build session id.
