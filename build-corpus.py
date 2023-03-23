@@ -5,7 +5,7 @@ from ast import literal_eval
 from framework.core.conversion.jsontoxml import SessionTranscriptConverter
 from framework.core.conversion.namemapping import SpeakerInfo
 from framework.core.conversion.namemapping import SpeakerInfoProvider
-from framework.core.conversion.rootxmlcreation import RootCorpusFileBuilder
+from framework.core.conversion.rootcorpusfilebuilder import RootCorpusFileBuilder
 from framework.utils.loggingutils import configure_logging
 from pathlib import Path
 from typing import Dict
