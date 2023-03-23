@@ -69,7 +69,7 @@ class OrganizationsListManipulator:
 
         logging.error("Could not find legislative term for session date %s.",
                       session_date)
-        return (None, None, None)
+        return (None, None, None, None)
 
     def __load_legislative_terms(
             self) -> Generator[Tuple[str, str, date, date], None, None]:
