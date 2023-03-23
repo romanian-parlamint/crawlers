@@ -13,15 +13,19 @@ from typing import Generator
 from typing import List
 import logging
 import pandas as pd
+import sys
 
 
-def iter_files(directory: str) -> Generator[Path, None, None]:
+def iter_files(directory: str,
+               max_files: int = None) -> Generator[Path, None, None]:
     """Recursively iterates over files of the specified type in a given directory.
 
     Parameters
     ----------
     directory: str, required
         The directory to iterate.
+    max_files: int, optional
+        If set, limits the iteration to its value; otherwise returns all files.
 
     Returns
     -------
@@ -29,9 +33,15 @@ def iter_files(directory: str) -> Generator[Path, None, None]:
         The generator that returns the path of each file.
     """
     root_path = Path(directory)
+    if max_files is None:
+        max_files = sys.maxint
+    count = 0
     for file_path in root_path.glob('*.json'):
-        yield file_path
-        break
+        if count < max_files:
+            count += 1
+            yield file_path
+        else:
+            break
 
 
 def build_output_file_path(input_file: str, output_dir: str) -> str:
@@ -130,7 +140,8 @@ def main(args):
                                          args.corpus_root_template,
                                          speaker_info_provider)
     total, processed, failed = 0, 0, 0
-    for f in iter_files(args.input_directory):
+    sample_size = args.sample_size if args.build_sample else None
+    for f in iter_files(args.input_directory, max_files=sample_size):
         total = total + 1
         try:
             output_file = build_output_file_path(f, str(output_dir))
@@ -190,6 +201,10 @@ def parse_arguments() -> Namespace:
                         help="When present, build sample corpus.",
                         action='store_true',
                         dest='build_sample')
+    parser.add_argument('--sample-size',
+                        help="The number of files to include in the sample.",
+                        type=int,
+                        default=10)
 
     parser.add_argument(
         '-l',
