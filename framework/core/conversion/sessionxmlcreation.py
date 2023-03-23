@@ -244,15 +244,30 @@ class SessionSummaryBuilder(DebateSectionBuilder):
 
     def __build_table_of_contents(self):
         """Build the table of contents using summary elements."""
-        note = etree.SubElement(self.debate_section, XmlElements.note)
-        note.set(XmlAttributes.element_type, "editorial")
-        note.text = Resources.ToC
+        self.__build_note("editorial", Resources.ToC)
 
         for summary_line in self.session_transcript.summary:
             for content in summary_line.contents:
-                note = etree.SubElement(self.debate_section, XmlElements.note)
-                note.set(XmlAttributes.element_type, "summary")
-                note.text = content.text
+                text = content.text
+                if isinstance(text, str):
+                    self.__build_note("summary", text)
+                else:
+                    for line in text:
+                        self.__build_note("summary", line)
+
+    def __build_note(self, note_type: str, text: str):
+        """Build a child note element.
+
+        Parameters
+        ----------
+        note_type: str, required
+            The type of the note.
+        text: str, required
+            The text of the note.
+        """
+        note = etree.SubElement(self.debate_section, XmlElements.note)
+        note.set(XmlAttributes.element_type, note_type)
+        note.text = text
 
     def __build_summary_heading(self):
         """Build the heading nodes of the summary."""
