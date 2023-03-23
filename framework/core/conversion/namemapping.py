@@ -259,7 +259,7 @@ class SpeakerInfoProvider:
             return self.__personal_info[key]
 
         logging.error("Could not find personal info for name '%s'.", full_name)
-        info = EMPTY_SPEAKER
+        info = SpeakerInfoProvider.EMPTY_SPEAKER
         self.__personal_info[key] = info
         return info
 
