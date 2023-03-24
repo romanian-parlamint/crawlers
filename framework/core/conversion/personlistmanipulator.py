@@ -20,18 +20,23 @@ class PersonListManipulator:
         self.__persons_list = next(
             xml_root.iterdescendants(tag=XmlElements.listPerson))
 
-    def add_or_update_person(self, person_id: str, legislative_term: Event,
-                             personal_info: PersonalInformation):
+    def add_or_update_person(self,
+                             person_id: str,
+                             personal_info: PersonalInformation,
+                             legislative_term: Event,
+                             executive_term: Event = None):
         """Add or update person.
 
         Parameters
         ----------
         person_id: str, required
             The id of the person to add or update.
-        legislative_term: tuple of (str, str, date, date), required
-            The legislative term as a tuple of (term id, organization id, start date, end date) in which the person appears.
         personal_info: PersonalInformation, required
             The personal information.
+        legislative_term: Event, required
+            The legislative term in which the person appears.
+        executive_term: Event, optional
+            The executive term of the person. Default is None.
         """
         person_id = person_id.replace('#', '')
         person = self.__get_person(person_id)
@@ -41,6 +46,8 @@ class PersonListManipulator:
                                           personal_info.sex,
                                           personal_info.profile_image)
         self.__update_affiliation(person, legislative_term)
+        if executive_term is not None:
+            self.__update_affiliation(person, executive_term)
 
     def __update_affiliation(self, person: etree.Element,
                              legislative_term: Event):

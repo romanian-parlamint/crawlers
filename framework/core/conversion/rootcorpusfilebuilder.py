@@ -66,10 +66,15 @@ class RootCorpusFileBuilder(XmlDataManipulator):
             session_date = speaker_reader.session_date
             term = self.__org_list.get_legislative_term(session_date)
             pi = self.__speaker_info_provider.get_personal_info(speaker_id)
-            self.__person_list.add_or_update_person(
-                speaker_id, term,
-                PersonalInformation(pi.first_name, pi.last_name, pi.sex,
-                                    pi.profile_image))
+            profile = PersonalInformation(pi.first_name, pi.last_name, pi.sex,
+                                          pi.profile_image)
+            executive_term = None
+            if speaker_id in gov_members:
+                executive_term = self.__org_list.get_executive_term(
+                    session_date)
+
+            self.__person_list.add_or_update_person(speaker_id, profile, term,
+                                                    executive_term)
 
     def __add_component_file(self, component_path: str):
         """Add the component path to the `include` element.
