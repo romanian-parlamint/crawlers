@@ -61,7 +61,8 @@ class RootCorpusFileBuilder(XmlDataManipulator):
             The path of the corpus component file.
         """
         speaker_reader = SessionSpeakersReader(component_path)
-        for speaker_id in speaker_reader.get_speaker_ids():
+        speaker_ids, gov_members = speaker_reader.get_speaker_ids()
+        for speaker_id in speaker_ids:
             session_date = speaker_reader.session_date
             term = self.__org_list.get_legislative_term(session_date)
             pi = self.__speaker_info_provider.get_personal_info(speaker_id)

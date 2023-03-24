@@ -2,6 +2,7 @@
 from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlElements, XmlAttributes
 from datetime import datetime
+from lxml import etree
 from typing import List
 
 
@@ -38,11 +39,33 @@ class SessionSpeakersReader(XmlDataManipulator):
 
         Returns
         -------
-        speaker_ids:  list of str
-            The list of unique speaker ids.
+        (speaker_ids, gov_members):  tuple of list of str
+            The list of unique speaker ids, and the list of unique government members.
         """
-        ids = set()
+        ids, gov_members = set(), set()
         for utterance in self.xml_root.iterdescendants(tag=XmlElements.u):
             speaker_id = utterance.get(XmlAttributes.who)
             ids.add(speaker_id)
-        return list(ids)
+            if self.__is_of_a_government_member(utterance):
+                gov_members.add(speaker_id)
+        return list(ids), list(gov_members)
+
+    def __is_of_a_government_member(self, utterance: etree.Element) -> bool:
+        """Check if the utterance is of a government member.
+
+        Parameters
+        ----------
+        utterance: etree.Element, required
+            The utterance to check.
+
+        Returns
+        -------
+        is_goverment_member: bool
+            True if the speaker is a government member; false otherwise.
+        """
+        note = utterance.getprevious()
+        if note is None:
+            return False
+        if note.tag != XmlElements.note:
+            return False
+        return 'ministru' in note.text.lower()
