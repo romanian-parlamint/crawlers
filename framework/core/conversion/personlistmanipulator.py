@@ -1,7 +1,7 @@
 """Class for manipulating person elements."""
 from lxml import etree
 from .xmlutils import XmlElements, XmlAttributes
-from .namedtuples import Term, PersonalInformation
+from .namedtuples import Event, PersonalInformation
 from typing import List
 
 
@@ -20,7 +20,7 @@ class PersonListManipulator:
         self.__persons_list = next(
             xml_root.iterdescendants(tag=XmlElements.listPerson))
 
-    def add_or_update_person(self, person_id: str, legislative_term: Term,
+    def add_or_update_person(self, person_id: str, legislative_term: Event,
                              personal_info: PersonalInformation):
         """Add or update person.
 
@@ -43,7 +43,7 @@ class PersonListManipulator:
         self.__update_affiliation(person, legislative_term)
 
     def __update_affiliation(self, person: etree.Element,
-                             legislative_term: Term):
+                             legislative_term: Event):
         """Add the legislative term to the affiliation of the person if it doesn't exist.
 
         Parameters
@@ -53,7 +53,7 @@ class PersonListManipulator:
         legislative_term: tuple of (str, str, date, date), required
             The id, organization id, start date, and end date of the legislative term.
         """
-        term_id, organization_id, start_date, end_date = legislative_term
+        organization_id, term_id, start_date, end_date = legislative_term
         for affiliation in person.iterdescendants(tag=XmlElements.affiliation):
             if affiliation.get(XmlAttributes.ana) == term_id:
                 # Affiliation already exists; nothing to do.
