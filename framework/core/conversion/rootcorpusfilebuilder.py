@@ -50,6 +50,7 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         self.__update_tag_usage(corpus_file)
         self.__update_speakers_list(corpus_file)
         self.__add_component_file(corpus_file)
+        self.__sort_component_files()
         self.save_changes(self.__file_path)
 
     def __update_speakers_list(self, component_path: str):
@@ -75,6 +76,16 @@ class RootCorpusFileBuilder(XmlDataManipulator):
 
             self.__person_list.add_or_update_person(speaker_id, profile, term,
                                                     executive_term)
+
+    def __sort_component_files(self):
+        """Sort component files by file name."""
+
+        def get_component_path(element):
+            if etree.QName(element).localname != "include":
+                return ''
+            return element.get("href")
+
+        self.xml_root[:] = sorted(self.xml_root, key=get_component_path)
 
     def __add_component_file(self, component_path: str):
         """Add the component path to the `include` element.
