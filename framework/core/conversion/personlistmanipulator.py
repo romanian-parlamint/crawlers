@@ -112,7 +112,7 @@ class PersonListManipulator:
 
         for part in last_name:
             surname = etree.SubElement(person_name, XmlElements.surname)
-            surname.text = part
+            surname.text = self.__capitalize_name(part)
 
         sex_element = etree.SubElement(person, XmlElements.sex)
         sex = sex if sex is not None else 'U'
@@ -124,6 +124,22 @@ class PersonListManipulator:
             graphic.set(XmlAttributes.url, profile_image)
 
         return person
+
+    def __capitalize_name(self, name: str) -> str:
+        """Capitalize the given name.
+
+        Parameters
+        ----------
+        name: str, required
+            The name to capitalize.
+
+        Returns
+        -------
+        capitalized_name: str
+            The capitalized name.
+        """
+        parts = name.split(sep='-')
+        return '-'.join([part.capitalize() for part in parts])
 
     def __get_person(self, person_id: str) -> etree.Element:
         """Get the person if person exists in persons list.
