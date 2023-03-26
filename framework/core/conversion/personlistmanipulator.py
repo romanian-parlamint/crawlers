@@ -45,27 +45,74 @@ class PersonListManipulator:
                                           personal_info.last_name,
                                           personal_info.sex,
                                           personal_info.profile_image)
+            self.__sort_persons()
         self.__update_affiliation(person, legislative_term)
         if executive_term is not None:
             self.__update_affiliation(person, executive_term)
 
-    def __update_affiliation(self, person: etree.Element,
-                             legislative_term: Event):
+    def __sort_persons(self):
+        """Sort person list by the value of id attribute."""
+
+        def get_person_sort_key(element):
+            if element.tag != XmlElements.person:
+                return ''
+
+            full_name = []
+            for surname in element.iterdescendants(tag=XmlElements.surname):
+                full_name.append(surname.text)
+            for forename in element.iterdescendants(tag=XmlElements.forename):
+                full_name.append(forename.text)
+
+            return ' '.join(full_name)
+
+        self.__persons_list[:] = sorted(self.__persons_list,
+                                        key=get_person_sort_key)
+
+    def __update_affiliation(self, person: etree.Element, event: Event):
         """Add the legislative term to the affiliation of the person if it doesn't exist.
 
         Parameters
         ----------
         person: etree.Element, required
             The person element to update.
-        legislative_term: tuple of (str, str, date, date), required
-            The id, organization id, start date, and end date of the legislative term.
+        event: Event, required
+            The event from which to extract affiliation info.
         """
-        organization_id, term_id, start_date, end_date = legislative_term
         for affiliation in person.iterdescendants(tag=XmlElements.affiliation):
-            if affiliation.get(XmlAttributes.ana) == term_id:
+            if affiliation.get(XmlAttributes.ana) == event.event_id:
                 # Affiliation already exists; nothing to do.
                 return
 
+        self.__add_affiliation(person, event)
+        self.__sort_affiliations(person)
+
+    def __sort_affiliations(self, person: etree.Element):
+        """Sort the affiliations of the provided person by event id.
+
+        Parameters
+        ----------
+        person: etree.Element, required
+            The person whose affiliation to sort.
+        """
+
+        def get_affiliation_id(element):
+            if element.tag != XmlElements.affiliation:
+                return ''
+            return element.get(XmlAttributes.ana)
+
+        person[:] = sorted(person, key=get_affiliation_id)
+
+    def __add_affiliation(self, person: etree.Element, event: Event):
+        """Add term affiliation to the specified person.
+
+        Parameters
+        ----------
+        person: etree.Element, required
+            The person to which to add affilication.
+        term: Event, required
+            The event containing the info for affiliation.
+        """
+        organization_id, term_id, start_date, end_date = event
         affiliation = etree.SubElement(person, XmlElements.affiliation)
         affiliation.set(XmlAttributes.ana, term_id)
         affiliation.set(XmlAttributes.ref, organization_id)
