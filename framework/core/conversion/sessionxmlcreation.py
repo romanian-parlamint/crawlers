@@ -331,7 +331,7 @@ class SessionChairmenBuilder(DebateSectionBuilder):
             return
 
         note = etree.SubElement(self.debate_section, XmlElements.note)
-        note.set(XmlAttributes.element_type, "chairman")
+        note.set(XmlAttributes.element_type, "narrative")
         note.text = chairman
         self.save_changes()
 
