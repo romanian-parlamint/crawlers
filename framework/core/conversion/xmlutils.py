@@ -108,8 +108,6 @@ def load_xml(file_name):
     """
     parser = etree.XMLParser(remove_blank_text=True)
     xml_tree = etree.parse(file_name, parser)
-    for element in xml_tree.iter():
-        element.tail = None
     return xml_tree
 
 
