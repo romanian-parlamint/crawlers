@@ -5,11 +5,13 @@ from typing import List
 from .jsonutils import SessionTranscript
 from .jsonutils import BodySegment
 from .jsonutils import Speaker
+from .jsonutils import SessionContentLine
 from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlAttributes
 from .xmlutils import XmlElements
 from .xmlutils import Resources
 from .namemapping import SpeakerInfoProvider
+import re
 
 
 class SessionIdBuilder(XmlDataManipulator):
@@ -137,6 +139,7 @@ class MeetingElementContentsBuilder(JsonTranscriptToXmlConverter):
 
         for meeting in self.xml_root.iterdescendants(tag=XmlElements.meeting):
             meeting.set(XmlAttributes.meeting_n, meeting_n)
+            meeting.set(XmlAttributes.corresp, "#RoParl")
 
         self.save_changes()
 
@@ -419,25 +422,75 @@ class SessionBodyBuilder(DebateSectionBuilder):
             for content_line in segment.contents:
                 if content_line.is_empty:
                     continue
-                self.__build_segment(utterance, content_line.text)
 
-            # TODO: Add editorial/gap elements if present
+                if len(content_line.annotations) == 0:
+                    self.__build_simple_segment(utterance, content_line.text)
+                else:
+                    self.__build_complex_segment(utterance, content_line)
+
         self.save_changes()
 
-    def __build_segment(self, utterance: etree.Element, text: str):
-        """Build a segment element and add it to the parent utterance element.
+    def __build_simple_segment(self, utterance: etree.Element, text: str):
+        """Build a segment element with text contents.
 
         Parameters
         ----------
         utterance: etree.Element, required
             The parent utterance element.
         text: str, required
-            The text of the segment.
-        """ ""
+            The contents of the segment.
+        """
         seg = etree.SubElement(utterance, XmlElements.seg)
         seg.set(XmlAttributes.xml_id,
                 self.__element_id_builder.get_segment_id())
         seg.text = text
+
+    def __build_complex_segment(self, utterance: etree.Element,
+                                content_line: SessionContentLine):
+        """Build a segment element and add it to the parent utterance element.
+
+        Parameters
+        ----------
+        utterance: etree.Element, required
+            The parent utterance element.
+        content_line: SessionContentLine, required
+            The contents of the segment.
+        """
+        text = content_line.text
+        for annotation in content_line.annotations:
+            replacement = self.__convert_annotation_to_element(annotation)
+            text = text.replace(annotation, ' {} '.format(replacement), 1)
+
+        text = re.sub(r'\s+', ' ', text)
+
+        seg = '<seg xml:id="{seg_id}">{content}</seg>'.format(
+            seg_id=self.__element_id_builder.get_segment_id(), content=text)
+        utterance.append(etree.fromstring(seg))
+
+    def __convert_annotation_to_element(self, annotation: str) -> str:
+        """Convert the provided annotation to an XML string.
+
+        Parameters
+        ----------
+        annotation: str, required
+            The text of the annotation.
+
+        Returns
+        -------
+        xml_string: str
+            The XML string of the annotation being converted.
+        """
+        template = '<note type="editorial">{}</note>'
+        text = annotation.lower()
+        if 'vocif' in text:
+            template = '<vocal type="shouting"><desc>{}</desc></vocal>'
+        if 'rumoare' in text:
+            template = '<vocal type="murmuring"><desc>{}</desc></vocal>'
+        if 'râsete' in text:
+            template = '<vocal type="laughter"><desc>{}</desc></vocal>'
+        if 'aplauze' in text:
+            template = '<vocal type="noise"><desc>{}</desc></vocal>'
+        return template.format(annotation)
 
     def __build_utterance(self, speaker_name: str, chairman_name: str):
         """Build an utterance element and add it to the debate section.
