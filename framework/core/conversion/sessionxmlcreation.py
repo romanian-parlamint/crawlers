@@ -457,14 +457,17 @@ class SessionBodyBuilder(DebateSectionBuilder):
             The contents of the segment.
         """
         text = content_line.text
+        seg = '<seg xml:id="{seg_id}">'
         for annotation in content_line.annotations:
+            first, *rest = text.split(annotation)
             replacement = self.__convert_annotation_to_element(annotation)
-            text = text.replace(annotation, ' {} '.format(replacement), 1)
+            seg = seg + "{} {} ".format(first, replacement)
+            text = ''.join(rest)
 
-        text = re.sub(r'\s+', ' ', text)
+        seg = seg + text + '</seg>'
+        seg = seg.format(seg_id=self.__element_id_builder.get_segment_id())
+        seg = re.sub(r'\s+', ' ', seg)
 
-        seg = '<seg xml:id="{seg_id}">{content}</seg>'.format(
-            seg_id=self.__element_id_builder.get_segment_id(), content=text)
         utterance.append(etree.fromstring(seg))
 
     def __convert_annotation_to_element(self, annotation: str) -> str:
