@@ -493,6 +493,8 @@ class SessionBodyBuilder(DebateSectionBuilder):
             template = '<vocal type="laughter"><desc>{}</desc></vocal>'
         if 'aplauze' in text:
             template = '<vocal type="noise"><desc>{}</desc></vocal>'
+        if 'gălăgie' in text:
+            template = '<vocal type="noise"><desc>{}</desc></vocal>'
         return template.format(annotation)
 
     def __build_utterance(self, speaker_name: str, chairman_name: str):
