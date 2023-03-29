@@ -427,6 +427,11 @@ class SessionBodyBuilder(DebateSectionBuilder):
                     self.__build_simple_segment(utterance, content_line.text)
                 else:
                     self.__build_complex_segment(utterance, content_line)
+            if len(utterance) == 0:
+                gap = etree.SubElement(utterance, XmlElements.gap,
+                                       {"reason": "editorial"})
+                desc = etree.SubElement(gap, XmlElements.desc)
+                desc.text = "Lipsesc informații din cauza unei erori în modulul de descărcare date."
 
         self.save_changes()
 
