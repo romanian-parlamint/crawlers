@@ -464,6 +464,7 @@ class SessionBodyBuilder(DebateSectionBuilder):
         text = content_line.text
         seg = '<seg xml:id="{seg_id}">'
         for annotation in content_line.annotations:
+            annotation = annotation.strip()
             first, *rest = text.split(annotation)
             replacement = self.__convert_annotation_to_element(annotation)
             seg = seg + "{} {} ".format(first, replacement)
