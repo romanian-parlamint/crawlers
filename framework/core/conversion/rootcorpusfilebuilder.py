@@ -6,7 +6,11 @@ from .personlistmanipulator import PersonListManipulator
 from .sessionspeakersreader import SessionSpeakersReader
 from .xmlstats import CorpusStatsWriter
 from .xmlstats import SessionStatsReader
+from .xmlutils import XmlAttributes
 from .xmlutils import XmlDataManipulator
+from .xmlutils import XmlElements
+from babel.dates import format_date
+from datetime import datetime
 from lxml import etree
 from pathlib import Path
 
@@ -47,7 +51,7 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         corpus_file: str, required
             The path of the file to add to the corpus.
         """
-        self.__update_tag_usage(corpus_file)
+        self.__update_statistics(corpus_file)
         self.__update_speakers_list(corpus_file)
         self.__add_component_file(corpus_file)
         self.__sort_component_files()
@@ -101,8 +105,8 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         include_element.set("href", Path(component_path).name)
         self.xml_root.append(include_element)
 
-    def __update_tag_usage(self, component_path: str):
-        """Update the values of `tagUsage` element with the values from the corpus component file.
+    def __update_statistics(self, component_path: str):
+        """Update the dates and values of `tagUsage` element with the values from the corpus component file.
 
         Parameters
         ----------
@@ -112,3 +116,31 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         provider = SessionStatsReader(component_path)
         writer = CorpusStatsWriter(self.xml_root, provider)
         writer.update_statistics()
+        self.__update_corpus_span(provider.get_session_date())
+
+    def __update_corpus_span(self, session_date: datetime.date):
+        """Update the date span of the corpus with the given date.
+
+        Parameters
+        ----------
+        session_date: datetime.date, required
+            The date of the component file session.
+        """
+        setting = next(self.xml_root.iterdescendants(tag=XmlElements.setting))
+        date = next(setting.iterdescendants(tag=XmlElements.date))
+        start_date, end_date = datetime.max, datetime.min
+
+        start = date.get(XmlAttributes.event_start)
+        if len(start) > 0:
+            start_date = datetime.fromisoformat(start)
+
+        end = date.get(XmlAttributes.event_end)
+        if len(start) > 0:
+            end_date = datetime.fromisoformat(end)
+
+        if session_date < start_date.date():
+            date.set(XmlAttributes.event_start,
+                     format_date(session_date, "yyyy-MM-dd"))
+        if session_date > end_date.date():
+            date.set(XmlAttributes.event_end,
+                     format_date(session_date, "yyyy-MM-dd"))

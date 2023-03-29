@@ -7,6 +7,7 @@ from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlAttributes
 from .xmlutils import XmlElements
 from .xmlutils import Resources
+from datetime import datetime
 
 
 class SessionStatsCalculator(XmlDataManipulator):
@@ -147,6 +148,21 @@ class SessionStatsReader(XmlDataManipulator):
             The path of the session XML file from where to read stats.
         """
         XmlDataManipulator.__init__(self, xml_file)
+
+    def get_session_date(self) -> datetime.date:
+        """Get the session date.
+
+        Returns
+        -------
+        session_date: datetime.date
+            The date of the session.
+        """
+        for date_elem in self.xml_root.iterdescendants(tag=XmlElements.date):
+            if date_elem.getparent().tag != XmlElements.bibl:
+                continue
+            date = datetime.fromisoformat(date_elem.get(XmlAttributes.when))
+            return date.date()
+        return None
 
     def get_num_words(self) -> int:
         """Compute the number of words from the session transcription.
