@@ -126,8 +126,33 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         session_date: datetime.date, required
             The date of the component file session.
         """
-        setting = next(self.xml_root.iterdescendants(tag=XmlElements.setting))
-        date = next(setting.iterdescendants(tag=XmlElements.date))
+        date_element = self.__update_span_for_element(XmlElements.setting,
+                                                      session_date)
+        date_element = self.__update_span_for_element(XmlElements.bibl,
+                                                      session_date)
+        att_from = date_element.get(XmlAttributes.event_start)
+        att_to = date_element.get(XmlAttributes.event_end)
+        date_element.text = f'{att_from} - {att_to}'
+
+    def __update_span_for_element(
+            self, element_name: str,
+            session_date: datetime.date) -> etree.Element:
+        """Update the span of the corpus with the given date for the provided element.
+
+        Parameters
+        ----------
+        element_name: str, required
+            The name of the element for which to update corpus span.
+        session_date: datetime.date, required
+            The date of the component file session.
+
+        Returns
+        -------
+        date_element: etree.Element
+            The child ``date`` element that contains the corpus span for further processing.
+        """
+        parent = next(self.xml_root.iterdescendants(tag=element_name))
+        date = next(parent.iterdescendants(tag=XmlElements.date))
         start_date, end_date = datetime.max, datetime.min
 
         start = date.get(XmlAttributes.event_start)
@@ -144,3 +169,4 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         if session_date > end_date.date():
             date.set(XmlAttributes.event_end,
                      format_date(session_date, "yyyy-MM-dd"))
+        return date
