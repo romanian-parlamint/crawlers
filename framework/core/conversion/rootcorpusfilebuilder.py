@@ -6,6 +6,7 @@ from .personlistmanipulator import PersonListManipulator
 from .sessionspeakersreader import SessionSpeakersReader
 from .xmlstats import CorpusStatsWriter
 from .xmlstats import SessionStatsReader
+from .xmlutils import Resources
 from .xmlutils import XmlAttributes
 from .xmlutils import XmlDataManipulator
 from .xmlutils import XmlElements
@@ -133,6 +134,27 @@ class RootCorpusFileBuilder(XmlDataManipulator):
         att_from = date_element.get(XmlAttributes.event_start)
         att_to = date_element.get(XmlAttributes.event_end)
         date_element.text = f'{att_from} - {att_to}'
+        self.__update_span_in_corpus_title(att_from, att_to)
+
+    def __update_span_in_corpus_title(self, start_date: str, end_date: str):
+        """Update the corpus span in corpus title.
+
+        Parameters
+        ----------
+        start_date: str, required
+            The string representation of the start date from the corpus.
+        end_date: str, required
+            The string representation of the end date from the corpus.
+        """
+        title_stmt = next(
+            self.xml_root.iterdescendants(tag=XmlElements.titleStmt))
+        for title in title_stmt.iterdescendants(tag=XmlElements.title):
+            title_type = title.get(XmlAttributes.type_)
+            if title_type != 'sub':
+                continue
+            lang = title.get(XmlAttributes.lang)
+            text = Resources.CorpusSubtitleEn if lang == 'en' else Resources.CorpusSubtitleRo
+            title.text = text.format(start_date, end_date)
 
     def __update_span_for_element(
             self, element_name: str,

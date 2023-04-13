@@ -84,6 +84,8 @@ class Resources:
     SessionSubtitleRo = "Stenograma ședinței Camerei Deputaților din România din {}"
     SessionTitleEn = "Romanian parliamentary corpus ParlaMint-RO, Regular Session, Chamber of Deputies, {}"
     SessionSubtitleEn = "Minutes of the session of the Chamber of Deputies of Romania, {}"
+    CorpusSubtitleRo = "Stenogramele ședințelor parlamentului României, {} - {}"
+    CorpusSubtitleEn = "Meeting minutes of the Romanian parliament, {} - {}"
     Heading = "ROMÂNIA CAMERA DEPUTAȚILOR"
     SessionHeading = "Ședinta Camerei Deputaților din {}"
     ToC = "SUMAR"
